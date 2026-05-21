@@ -98,11 +98,30 @@
   color: var(--color-text-muted);
   text-decoration: none;
   transition: all var(--transition-fast);
+  position: relative;
 }
 
 .bellButton:hover {
   color: var(--color-primary);
   background-color: var(--color-surface);
+}
+
+.badge {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-error);
+  color: white;
+  font-size: 10px;
+  font-weight: var(--font-bold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
 }
 
 /* Profile Menu */

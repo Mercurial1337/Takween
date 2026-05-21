@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/contexts/ToastContext';
@@ -20,12 +20,18 @@ export default function AdminLevelsPage() {
   const [sortOrder, setSortOrder] = useState(0);
   const [saving, setSaving] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     const { data } = await supabase.from('levels').select('*').order('sort_order');
     if (data) setItems(data);
-  };
+  }, [supabase]);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    let active = true;
+    Promise.resolve().then(() => {
+      if (active) fetchData();
+    });
+    return () => { active = false; };
+  }, [fetchData]);
 
   const openCreate = () => { setEditing(null); setName(''); setSortOrder(items.length); setShowModal(true); };
   const openEdit = (item) => { setEditing(item); setName(item.name); setSortOrder(item.sort_order); setShowModal(true); };

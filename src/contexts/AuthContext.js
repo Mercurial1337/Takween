@@ -7,13 +7,13 @@ import { createClient } from '@/lib/supabase/client'
 const AuthContext = createContext(undefined)
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
-
   const isConfigured = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
   const supabase = isConfigured ? createClient() : null
+
+  const [user, setUser] = useState(null)
+  const [profile, setProfile] = useState(null)
+  const [loading, setLoading] = useState(isConfigured)
+  const router = useRouter()
 
   const fetchProfile = async (userId) => {
     const { data, error } = await supabase
@@ -44,10 +44,7 @@ export function AuthProvider({ children }) {
   }
 
   useEffect(() => {
-    if (!supabase) {
-      setLoading(false)
-      return
-    }
+    if (!supabase) return;
 
     const initAuth = async () => {
       try {

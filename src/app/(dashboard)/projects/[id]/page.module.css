@@ -317,3 +317,46 @@
     width: 100%;
   }
 }
+
+.memberLink {
+  transition: opacity var(--transition-fast);
+}
+
+.memberLink:hover {
+  opacity: 0.85;
+}
+
+.memberNameLink {
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.memberNameLink:hover .memberName {
+  color: var(--color-primary);
+}
+
+.memberContactInfo {
+  margin-top: var(--space-xs);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.contactBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 2px var(--space-sm);
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: var(--font-medium);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.contactBadge:hover {
+  background-color: var(--color-success);
+  color: white;
+}

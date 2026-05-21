@@ -1,9 +1,7 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
-import { Bell, Check, CheckCheck, Trash2 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { Bell, CheckCheck } from 'lucide-react';
+import { useNotifications } from '@/contexts/NotificationsContext';
 import PageHeader from '@/components/layout/PageHeader/PageHeader';
 import Card from '@/components/ui/Card/Card';
 import Badge from '@/components/ui/Badge/Badge';
@@ -25,62 +23,17 @@ const typeLabels = {
 };
 
 export default function NotificationsPage() {
-  const { user } = useAuth();
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const supabase = useMemo(() => createClient(), []);
-
-  const fetchNotifications = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-    if (data) setNotifications(data);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchNotifications();
-
-    // Realtime subscription
-    const channel = supabase
-      .channel('notifications')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'notifications',
-        filter: `user_id=eq.${user?.id}`,
-      }, (payload) => {
-        setNotifications((prev) => [payload.new, ...prev]);
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [user]);
-
-  const markAsRead = async (id) => {
-    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
-    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, is_read: true } : n));
-  };
-
-  const markAllRead = async () => {
-    await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('user_id', user.id)
-      .eq('is_read', false);
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-  };
-
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
+  const { notifications, loading, unreadCount, markAsRead, markAllRead } = useNotifications();
 
   if (loading) {
     return (
-      <div>
+      <div className={styles.page}>
         <Skeleton variant="text" width="200px" height="32px" />
-        <Skeleton variant="rectangular" height="60px" count={5} />
+        <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <Skeleton variant="rectangular" height="80px" />
+          <Skeleton variant="rectangular" height="80px" />
+          <Skeleton variant="rectangular" height="80px" />
+        </div>
       </div>
     );
   }

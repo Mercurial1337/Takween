@@ -7,23 +7,16 @@ import styles from './TagInput.module.css';
 export default function TagInput({ value = [], onChange, suggestions = [], placeholder = 'Type to search...', label, error }) {
   const [inputValue, setInputValue] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
-  const [filtered, setFiltered] = useState([]);
   const inputRef = useRef(null);
   const wrapperRef = useRef(null);
 
-  useEffect(() => {
-    if (!inputValue.trim()) {
-      setFiltered([]);
-      setShowDropdown(false);
-      return;
-    }
-    const lower = inputValue.toLowerCase();
-    const results = suggestions
-      .filter((s) => s.name.toLowerCase().includes(lower) && !value.includes(s.name))
-      .slice(0, 8);
-    setFiltered(results);
-    setShowDropdown(results.length > 0 || inputValue.trim().length > 0);
-  }, [inputValue, suggestions, value]);
+  const trimmedInput = inputValue.trim();
+  const lower = trimmedInput.toLowerCase();
+  const filtered = trimmedInput
+    ? suggestions
+        .filter((s) => s.name.toLowerCase().includes(lower) && !value.includes(s.name))
+        .slice(0, 8)
+    : [];
 
   useEffect(() => {
     const handleOutside = (e) => {
@@ -87,7 +80,11 @@ export default function TagInput({ value = [], onChange, suggestions = [], place
           type="text"
           className={styles.input}
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          onChange={(e) => {
+            const val = e.target.value;
+            setInputValue(val);
+            setShowDropdown(val.trim().length > 0);
+          }}
           onFocus={() => inputValue.trim() && setShowDropdown(true)}
           onKeyDown={handleKeyDown}
           placeholder={value.length === 0 ? placeholder : 'Add more...'}

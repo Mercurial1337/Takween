@@ -2,6 +2,7 @@ import "./globals.css";
 import { Inter } from "next/font/google";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ToastProvider } from "@/contexts/ToastContext";
+import { NotificationsProvider } from "@/contexts/NotificationsContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -36,7 +37,9 @@ export default function RootLayout({ children }) {
     <html lang="en" className={inter.variable}>
       <body>
         <AuthProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <NotificationsProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </NotificationsProvider>
         </AuthProvider>
       </body>
     </html>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Users, FolderOpen, Bell, ArrowRight, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,7 +19,7 @@ export default function DashboardPage() {
   const [pendingRequests, setPendingRequests] = useState([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     if (!user) return;
@@ -106,8 +106,10 @@ export default function DashboardPage() {
       }
     };
 
-    fetchDashboardData();
-  }, [user]);
+    Promise.resolve().then(() => {
+      fetchDashboardData();
+    });
+  }, [user, supabase]);
 
   if (authLoading || loading) {
     return (

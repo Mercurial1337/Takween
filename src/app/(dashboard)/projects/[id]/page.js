@@ -47,7 +47,7 @@ export default function ProjectDetailPage({ params }) {
   const totalMembers = members.length + manualMembers.length;
   const isFull = totalMembers >= (project?.max_team_size || 0);
 
-  const fetchProject = async () => {
+  const fetchProject = useCallback(async () => {
     try {
       // Get project
       const { data: proj } = await supabase
@@ -66,11 +66,10 @@ export default function ProjectDetailPage({ params }) {
 
       if (teamData) {
         setTeam(teamData);
-
         // Get members
         const { data: memberData } = await supabase
           .from('team_members')
-          .select('*, profiles:user_id (id, full_name, avatar_url, level_id, levels:level_id (name), linkedin_url, github_url)')
+          .select('*, profiles:user_id (id, full_name, avatar_url, level_id, levels:level_id (name), linkedin_url, github_url, whatsapp_number, email)')
           .eq('team_id', teamData.id)
           .order('joined_at');
         if (memberData) setMembers(memberData);
@@ -107,9 +106,13 @@ export default function ProjectDetailPage({ params }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, user, supabase]);
 
-  useEffect(() => { fetchProject(); }, [id, user]);
+  useEffect(() => {
+    Promise.resolve().then(() => {
+      fetchProject();
+    });
+  }, [fetchProject]);
 
   // Create team
   const handleCreateTeam = async () => {
@@ -418,37 +421,59 @@ export default function ProjectDetailPage({ params }) {
 
             {/* Members List */}
             <div className={styles.membersList}>
-              {members.map((m) => (
-                <Card key={m.id} className={styles.memberCard}>
-                  <div className={styles.memberInfo}>
-                    <Avatar name={m.profiles?.full_name} src={m.profiles?.avatar_url} size="md" />
-                    <div>
-                      <div className={styles.memberNameRow}>
-                        <span className={styles.memberName}>
-                          {isMember ? m.profiles?.full_name : m.profiles?.full_name?.split(' ')[0]}
-                        </span>
-                        {m.role === 'owner' && (
-                          <Badge variant="accent" size="sm">
-                            <Crown size={10} /> Owner
-                          </Badge>
+              {members.map((m) => {
+                const memberProfile = m.profiles;
+                const canViewFullDetails = !!user;
+                const displayName = canViewFullDetails ? memberProfile?.full_name : memberProfile?.full_name?.split(' ')[0];
+                const profileLink = canViewFullDetails ? `/profile/${memberProfile?.id}` : `/login?redirect=/projects/${id}`;
+
+                return (
+                  <Card key={m.id} className={styles.memberCard}>
+                    <div className={styles.memberInfo}>
+                      <Link href={profileLink} className={styles.memberLink}>
+                        <Avatar name={memberProfile?.full_name} src={memberProfile?.avatar_url} size="md" />
+                      </Link>
+                      <div>
+                        <div className={styles.memberNameRow}>
+                          <Link href={profileLink} className={styles.memberNameLink}>
+                            <span className={styles.memberName}>{displayName}</span>
+                          </Link>
+                          {m.role === 'owner' && (
+                            <Badge variant="accent" size="sm">
+                              <Crown size={10} /> Owner
+                            </Badge>
+                          )}
+                        </div>
+                        {canViewFullDetails && memberProfile?.levels?.name && (
+                          <p className={styles.memberLevel}>{memberProfile.levels.name}</p>
+                        )}
+                        {isMember && memberProfile?.whatsapp_number && (
+                          <div className={styles.memberContactInfo}>
+                            <a
+                              href={`https://wa.me/${memberProfile.whatsapp_number.replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={styles.contactBadge}
+                              title="WhatsApp"
+                            >
+                              <MessageSquare size={12} /> {memberProfile.whatsapp_number}
+                            </a>
+                          </div>
                         )}
                       </div>
-                      {isMember && m.profiles?.levels?.name && (
-                        <p className={styles.memberLevel}>{m.profiles.levels.name}</p>
-                      )}
                     </div>
-                  </div>
-                  {isOwner && m.user_id !== user.id && (
-                    <button
-                      className={styles.removeBtn}
-                      onClick={() => handleRemoveMember(m.id, m.user_id)}
-                      title="Remove member"
-                    >
-                      <UserMinus size={16} />
-                    </button>
-                  )}
-                </Card>
-              ))}
+                    {isOwner && m.user_id !== user.id && (
+                      <button
+                        className={styles.removeBtn}
+                        onClick={() => handleRemoveMember(m.id, m.user_id)}
+                        title="Remove member"
+                      >
+                        <UserMinus size={16} />
+                      </button>
+                    )}
+                  </Card>
+                );
+              })}
 
               {/* Manual Members */}
               {manualMembers.map((m) => (
@@ -461,6 +486,19 @@ export default function ProjectDetailPage({ params }) {
                         <Badge variant="default" size="sm">Manual</Badge>
                       </div>
                       {m.notes && <p className={styles.memberLevel}>{m.notes}</p>}
+                      {isMember && m.whatsapp_number && (
+                        <div className={styles.memberContactInfo}>
+                          <a
+                            href={`https://wa.me/${m.whatsapp_number.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.contactBadge}
+                            title="WhatsApp"
+                          >
+                            <MessageSquare size={12} /> {m.whatsapp_number}
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </div>
                   {isOwner && (

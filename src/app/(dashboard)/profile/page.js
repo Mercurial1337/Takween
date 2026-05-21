@@ -35,12 +35,14 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!profile) return;
-    setFormData({
-      full_name: profile.full_name || '',
-      whatsapp_number: profile.whatsapp_number || '',
-      level_id: profile.level_id || '',
-      linkedin_url: profile.linkedin_url || '',
-      github_url: profile.github_url || '',
+    Promise.resolve().then(() => {
+      setFormData({
+        full_name: profile.full_name || '',
+        whatsapp_number: profile.whatsapp_number || '',
+        level_id: profile.level_id || '',
+        linkedin_url: profile.linkedin_url || '',
+        github_url: profile.github_url || '',
+      });
     });
   }, [profile]);
 

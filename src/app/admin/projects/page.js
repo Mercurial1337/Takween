@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,7 +28,7 @@ export default function AdminProjectsPage() {
   });
   const [saving, setSaving] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     const [projRes, deptRes] = await Promise.all([
       supabase.from('projects').select('*, departments (name)').order('created_at', { ascending: false }),
       supabase.from('departments').select('*').order('name'),
@@ -36,9 +36,15 @@ export default function AdminProjectsPage() {
     if (projRes.data) setProjects(projRes.data);
     if (deptRes.data) setDepartments(deptRes.data);
     setLoading(false);
-  };
+  }, [supabase]);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    let active = true;
+    Promise.resolve().then(() => {
+      if (active) fetchData();
+    });
+    return () => { active = false; };
+  }, [fetchData]);
 
   const openCreate = () => {
     setEditing(null);

@@ -19,12 +19,16 @@ export default function AdminDepartmentsPage() {
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     const { data } = await supabase.from('departments').select('*').order('name');
     if (data) setItems(data);
-  };
+  }, [supabase]);
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    Promise.resolve().then(() => {
+      fetchData();
+    });
+  }, [fetchData]);
 
   const openCreate = () => { setEditing(null); setName(''); setShowModal(true); };
   const openEdit = (item) => { setEditing(item); setName(item.name); setShowModal(true); };

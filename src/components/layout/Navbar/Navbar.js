@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X, Bell, ChevronDown, LogOut, User, LayoutDashboard, Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotifications } from '@/contexts/NotificationsContext';
 import Avatar from '@/components/ui/Avatar/Avatar';
 import styles from './Navbar.module.css';
 
 export default function Navbar() {
   const { user, profile, loading, signOut } = useAuth();
+  const { unreadCount } = useNotifications();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -23,10 +25,12 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
     setMobileMenuOpen(false);
     setProfileMenuOpen(false);
-  }, [pathname]);
+  }
 
   // Close profile menu when clicking outside
   useEffect(() => {
@@ -77,6 +81,11 @@ export default function Navbar() {
                 {/* Notification Bell */}
                 <Link href="/notifications" className={styles.bellButton} aria-label="Notifications">
                   <Bell size={20} />
+                  {unreadCount > 0 && (
+                    <span className={styles.badge}>
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
                 </Link>
 
                 {/* Profile Dropdown */}
