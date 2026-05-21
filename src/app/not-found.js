@@ -14,7 +14,7 @@ export default function NotFound() {
         <h2 className={styles.title}>Page Not Found</h2>
         <p className={styles.description}>
           The page you are looking for might have been moved, had its name changed,
-          or is temporarily unavailable. Let's get you back on track.
+          or is temporarily unavailable. Let&apos;s get you back on track.
         </p>
         <div className={styles.actions}>
           <Link href="/" passHref legacyBehavior>
