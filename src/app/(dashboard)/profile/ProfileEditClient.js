@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { User, Mail, Phone, Globe, Code2, Save } from 'lucide-react';
+import { User, Mail, Phone, Globe, Code2, Save, Linkedin, Github } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
@@ -194,7 +194,7 @@ export default function ProfileEditClient() {
             <Input
               id="profile-linkedin"
               label="LinkedIn URL"
-              icon={Globe}
+              icon={Linkedin}
               value={formData.linkedin_url}
               onChange={(e) => updateField('linkedin_url', e.target.value)}
               placeholder="https://linkedin.com/in/..."
@@ -202,7 +202,7 @@ export default function ProfileEditClient() {
             <Input
               id="profile-github"
               label="GitHub URL"
-              icon={Code2}
+              icon={Github}
               value={formData.github_url}
               onChange={(e) => updateField('github_url', e.target.value)}
               placeholder="https://github.com/..."

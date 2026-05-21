@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Mail, Lock, Phone, Globe, Code2 } from 'lucide-react';
+import { User, Mail, Lock, Phone, Globe, Code2, Linkedin, Github } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/contexts/ToastContext';
 import { registerSchema } from '@/lib/validators';
@@ -248,7 +248,7 @@ export default function RegisterForm() {
           <Input
             id="reg-linkedin"
             label="LinkedIn URL"
-            icon={Globe}
+            icon={Linkedin}
             value={formData.linkedin_url}
             onChange={(e) => updateField('linkedin_url', e.target.value)}
             error={errors.linkedin_url}
@@ -257,7 +257,7 @@ export default function RegisterForm() {
           <Input
             id="reg-github"
             label="GitHub URL"
-            icon={Code2}
+            icon={Github}
             value={formData.github_url}
             onChange={(e) => updateField('github_url', e.target.value)}
             error={errors.github_url}

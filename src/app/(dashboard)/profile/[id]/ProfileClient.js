@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { User, Mail, Phone, Globe, Code2, ArrowLeft, ShieldAlert, Award, MessageSquare } from 'lucide-react';
+import { User, Mail, Phone, Globe, Code2, ArrowLeft, ShieldAlert, Award, MessageSquare, Linkedin, Github } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import Card from '@/components/ui/Card/Card';
@@ -158,7 +158,7 @@ export default function ProfileClient({ id }) {
                   rel="noopener noreferrer"
                   className={styles.socialLink}
                 >
-                  <Code2 size={16} /> GitHub Profile
+                  <Github size={16} /> GitHub Profile
                 </a>
               ) : (
                 <span className={styles.noLink}>No GitHub link provided</span>
@@ -170,7 +170,7 @@ export default function ProfileClient({ id }) {
                   rel="noopener noreferrer"
                   className={styles.socialLink}
                 >
-                  <Globe size={16} /> LinkedIn Profile
+                  <Linkedin size={16} /> LinkedIn Profile
                 </a>
               ) : (
                 <span className={styles.noLink}>No LinkedIn link provided</span>
