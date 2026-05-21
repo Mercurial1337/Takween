@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Mail, Lock, Phone, Globe, Code2 } from 'lucide-react';
+import { User, Mail, Lock, Phone, Globe, Code2, CheckCircle2 } from 'lucide-react';
 import { Linkedin, Github } from '@/components/ui/Icons/Icons';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/contexts/ToastContext';
@@ -29,6 +29,7 @@ export default function RegisterForm() {
   const [loading, setLoading] = useState(false);
   const [levels, setLevels] = useState([]);
   const [skillSuggestions, setSkillSuggestions] = useState([]);
+  const [verificationSent, setVerificationSent] = useState(false);
   const router = useRouter();
   const { showToast } = useToast();
   const supabase = useMemo(() => createClient(), []);
@@ -70,10 +71,21 @@ export default function RegisterForm() {
 
     setLoading(true);
     try {
-      // 1. Sign up
+      // 1. Sign up (include metadata so the DB trigger can create the profile and skills automatically)
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+          data: {
+            full_name: formData.full_name,
+            whatsapp_number: formData.whatsapp_number,
+            level_id: formData.level_id || null,
+            linkedin_url: formData.linkedin_url || null,
+            github_url: formData.github_url || null,
+            skills: formData.skills,
+          },
+        },
       });
 
       if (signUpError) {
@@ -87,13 +99,24 @@ export default function RegisterForm() {
         return;
       }
 
-      // 2. Create profile
-      const { error: profileError } = await supabase.from('profiles').insert({
+      // Check if a session was created. If not, confirmation is required by Supabase.
+      if (!authData.session) {
+        setVerificationSent(true);
+        showToast({
+          title: 'Verification email sent',
+          message: 'Please check your inbox to confirm your email.',
+          variant: 'success',
+        });
+        return;
+      }
+
+      // 2. Client-side fallback / direct upsert (if session exists, e.g. email confirmation is turned off)
+      const { error: profileError } = await supabase.from('profiles').upsert({
         id: userId,
         full_name: formData.full_name,
         email: formData.email,
         whatsapp_number: formData.whatsapp_number,
-        level_id: formData.level_id,
+        level_id: formData.level_id || null,
         linkedin_url: formData.linkedin_url || null,
         github_url: formData.github_url || null,
       });
@@ -104,11 +127,10 @@ export default function RegisterForm() {
         return;
       }
 
-      // 3. Handle skills
+      // 3. Handle skills fallback
       if (formData.skills.length > 0) {
         const skillIds = [];
         for (const skillName of formData.skills) {
-          // Check if skill exists
           let { data: existing } = await supabase
             .from('skills')
             .select('id')
@@ -118,7 +140,6 @@ export default function RegisterForm() {
           if (existing) {
             skillIds.push(existing.id);
           } else {
-            // Create new custom skill
             const { data: newSkill } = await supabase
               .from('skills')
               .insert({ name: skillName, is_predefined: false })
@@ -128,9 +149,8 @@ export default function RegisterForm() {
           }
         }
 
-        // Insert profile_skills
         if (skillIds.length > 0) {
-          await supabase.from('profile_skills').insert(
+          await supabase.from('profile_skills').upsert(
             skillIds.map((skillId) => ({ profile_id: userId, skill_id: skillId }))
           );
         }
@@ -145,6 +165,22 @@ export default function RegisterForm() {
       setLoading(false);
     }
   };
+
+  if (verificationSent) {
+    return (
+      <div className={styles.successState}>
+        <CheckCircle2 size={64} className={styles.successIcon} />
+        <h2 className={styles.successTitle}>Verify Your Email</h2>
+        <p className={styles.successText}>
+          We have sent a verification link to <strong>{formData.email}</strong>. 
+          Please check your inbox and click the link to confirm your account and start using Takween.
+        </p>
+        <Button onClick={() => router.push('/login')} style={{ marginTop: 'var(--space-md)' }} fullWidth>
+          Go to Login
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className={styles.form} noValidate>
