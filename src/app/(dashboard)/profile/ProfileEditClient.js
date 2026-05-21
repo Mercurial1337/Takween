@@ -25,11 +25,13 @@ export default function ProfileEditClient() {
     full_name: '',
     whatsapp_number: '',
     level_id: '',
+    department_id: '',
     linkedin_url: '',
     github_url: '',
   });
   const [skills, setSkills] = useState([]);
   const [levels, setLevels] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [skillSuggestions, setSkillSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -41,6 +43,7 @@ export default function ProfileEditClient() {
         full_name: profile.full_name || '',
         whatsapp_number: profile.whatsapp_number || '',
         level_id: profile.level_id || '',
+        department_id: profile.department_id || '',
         linkedin_url: profile.linkedin_url || '',
         github_url: profile.github_url || '',
       });
@@ -49,11 +52,13 @@ export default function ProfileEditClient() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [levelsRes, skillsRes] = await Promise.all([
+      const [levelsRes, deptsRes, skillsRes] = await Promise.all([
         supabase.from('levels').select('*').order('sort_order'),
+        supabase.from('departments').select('*').order('name'),
         supabase.from('skills').select('*').order('name'),
       ]);
       if (levelsRes.data) setLevels(levelsRes.data);
+      if (deptsRes.data) setDepartments(deptsRes.data);
       if (skillsRes.data) setSkillSuggestions(skillsRes.data);
 
       // Fetch user's skills
@@ -85,6 +90,7 @@ export default function ProfileEditClient() {
           full_name: formData.full_name,
           whatsapp_number: formData.whatsapp_number,
           level_id: formData.level_id || null,
+          department_id: formData.department_id || null,
           linkedin_url: formData.linkedin_url || null,
           github_url: formData.github_url || null,
         })
@@ -181,6 +187,16 @@ export default function ProfileEditClient() {
             options={levels.map((l) => ({ value: l.id, label: l.name }))}
             value={formData.level_id}
             onChange={(e) => updateField('level_id', e.target.value)}
+          />
+
+          <Select
+            id="profile-department"
+            label="Department"
+            placeholder="Select your department"
+            options={departments.map((d) => ({ value: d.id, label: d.name }))}
+            value={formData.department_id}
+            onChange={(e) => updateField('department_id', e.target.value)}
+            required
           />
 
           <TagInput

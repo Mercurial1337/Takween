@@ -21,6 +21,7 @@ export default function RegisterForm() {
     confirm_password: '',
     whatsapp_number: '',
     level_id: '',
+    department_id: '',
     skills: [],
     linkedin_url: '',
     github_url: '',
@@ -28,6 +29,7 @@ export default function RegisterForm() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [levels, setLevels] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [skillSuggestions, setSkillSuggestions] = useState([]);
   const [verificationSent, setVerificationSent] = useState(false);
   const router = useRouter();
@@ -36,11 +38,13 @@ export default function RegisterForm() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [levelsRes, skillsRes] = await Promise.all([
+      const [levelsRes, deptsRes, skillsRes] = await Promise.all([
         supabase.from('levels').select('*').order('sort_order'),
+        supabase.from('departments').select('*').order('name'),
         supabase.from('skills').select('*').order('name'),
       ]);
       if (levelsRes.data) setLevels(levelsRes.data);
+      if (deptsRes.data) setDepartments(deptsRes.data);
       if (skillsRes.data) setSkillSuggestions(skillsRes.data);
     };
     fetchData();
@@ -81,6 +85,7 @@ export default function RegisterForm() {
             full_name: formData.full_name,
             whatsapp_number: formData.whatsapp_number,
             level_id: formData.level_id || null,
+            department_id: formData.department_id || null,
             linkedin_url: formData.linkedin_url || null,
             github_url: formData.github_url || null,
             skills: formData.skills,
@@ -117,6 +122,7 @@ export default function RegisterForm() {
         email: formData.email,
         whatsapp_number: formData.whatsapp_number,
         level_id: formData.level_id || null,
+        department_id: formData.department_id || null,
         linkedin_url: formData.linkedin_url || null,
         github_url: formData.github_url || null,
       });
@@ -259,6 +265,16 @@ export default function RegisterForm() {
             value={formData.level_id}
             onChange={(e) => updateField('level_id', e.target.value)}
             error={errors.level_id}
+            required
+          />
+          <Select
+            id="reg-department"
+            label="Department"
+            placeholder="Select your department"
+            options={departments.map((d) => ({ value: d.id, label: d.name }))}
+            value={formData.department_id}
+            onChange={(e) => updateField('department_id', e.target.value)}
+            error={errors.department_id}
             required
           />
         </div>
