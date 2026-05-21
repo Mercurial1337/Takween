@@ -61,13 +61,21 @@ export const profileUpdateSchema = z.object({
 export const projectSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(200),
   description: z.string().min(10, 'Description must be at least 10 characters').max(5000),
-  department_id: z.string().uuid('Please select a department'),
+  department_id: z.string().uuid('Please select a department').nullable().optional().or(z.literal('')),
+  min_team_size: z
+    .number()
+    .int()
+    .min(1, 'Minimum team size must be at least 1')
+    .max(20, 'Minimum team size cannot exceed 20'),
   max_team_size: z
     .number()
     .int()
-    .min(1, 'Team size must be at least 1')
-    .max(20, 'Team size cannot exceed 20'),
+    .min(1, 'Maximum team size must be at least 1')
+    .max(20, 'Maximum team size cannot exceed 20'),
   status: z.enum(['open', 'closed']).optional().default('open'),
+}).refine((data) => data.min_team_size <= data.max_team_size, {
+  message: 'Minimum team size cannot exceed maximum team size',
+  path: ['min_team_size'],
 });
 
 // ============================================================================

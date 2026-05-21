@@ -67,7 +67,7 @@ export default function ProjectsClient() {
     }
 
     if (departmentFilter) {
-      result = result.filter((p) => p.department_id === departmentFilter);
+      result = result.filter((p) => p.department_id === departmentFilter || p.department_id === null);
     }
 
     return result;
@@ -154,12 +154,10 @@ export default function ProjectsClient() {
                     )}
                   </div>
 
-                  {project.departments?.name && (
-                    <div className={styles.deptTag}>
-                      <Building2 size={12} />
-                      {project.departments.name}
-                    </div>
-                  )}
+                  <div className={styles.deptTag}>
+                    <Building2 size={12} />
+                    {project.departments?.name || 'Universal (All Departments)'}
+                  </div>
 
                   <p className={styles.projectDesc}>
                     {project.description.length > 120
@@ -170,7 +168,7 @@ export default function ProjectsClient() {
                   <div className={styles.cardFooter}>
                     <span className={styles.memberCount}>
                       <Users size={14} />
-                      {memberCount}/{project.max_team_size} members
+                      {memberCount} members ({project.min_team_size || 1}-{project.max_team_size} target)
                     </span>
                   </div>
                 </Card>

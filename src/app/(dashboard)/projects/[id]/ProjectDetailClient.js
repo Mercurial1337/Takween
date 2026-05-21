@@ -346,16 +346,14 @@ export default function ProjectDetailClient({ id }) {
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>{project.title}</h1>
-          {project.departments?.name && (
-            <div className={styles.deptTag}>
-              <Building2 size={14} />
-              {project.departments.name}
-            </div>
-          )}
+          <div className={styles.deptTag}>
+            <Building2 size={14} />
+            {project.departments?.name || 'Universal (All Departments)'}
+          </div>
         </div>
         <div className={styles.meta}>
           <Badge variant="primary" size="sm">
-            Max {project.max_team_size} members
+            {project.min_team_size || 1} - {project.max_team_size} members
           </Badge>
         </div>
       </div>

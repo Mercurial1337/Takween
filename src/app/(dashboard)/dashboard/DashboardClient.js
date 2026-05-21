@@ -41,6 +41,7 @@ export default function DashboardClient() {
                 id,
                 title,
                 department_id,
+                min_team_size,
                 max_team_size,
                 departments (name)
               )
@@ -189,12 +190,12 @@ export default function DashboardClient() {
                       {team.status === 'recruiting' ? 'Recruiting' : 'Closed'}
                     </Badge>
                   </div>
-                  {team.projects?.departments?.name && (
-                    <p className={styles.teamCardDept}>{team.projects.departments.name}</p>
-                  )}
+                  <p className={styles.teamCardDept}>
+                    {team.projects?.departments?.name || 'Universal (All Departments)'}
+                  </p>
                   <div className={styles.teamCardFooter}>
                     <span className={styles.teamCardMembers}>
-                      <Users size={14} /> {team.memberCount}/{team.projects?.max_team_size}
+                      <Users size={14} /> {team.memberCount}/{team.projects?.max_team_size} members ({team.projects?.min_team_size || 1}-{team.projects?.max_team_size} target)
                     </span>
                     <Badge variant={team.role === 'owner' ? 'accent' : 'primary'} size="sm">
                       {team.role === 'owner' ? 'Owner' : 'Member'}

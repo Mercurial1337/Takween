@@ -24,7 +24,7 @@ export default function ProjectsClient() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [formData, setFormData] = useState({
-    title: '', description: '', department_id: '', max_team_size: 5, status: 'open',
+    title: '', description: '', department_id: 'universal', min_team_size: 1, max_team_size: 5, status: 'open',
   });
   const [saving, setSaving] = useState(false);
 
@@ -48,7 +48,7 @@ export default function ProjectsClient() {
 
   const openCreate = () => {
     setEditing(null);
-    setFormData({ title: '', description: '', department_id: '', max_team_size: 5, status: 'open' });
+    setFormData({ title: '', description: '', department_id: 'universal', min_team_size: 1, max_team_size: 5, status: 'open' });
     setShowModal(true);
   };
 
@@ -57,7 +57,8 @@ export default function ProjectsClient() {
     setFormData({
       title: project.title,
       description: project.description,
-      department_id: project.department_id || '',
+      department_id: project.department_id || 'universal',
+      min_team_size: project.min_team_size || 1,
       max_team_size: project.max_team_size,
       status: project.status,
     });
@@ -65,18 +66,38 @@ export default function ProjectsClient() {
   };
 
   const handleSave = async () => {
-    if (!formData.title || !formData.description || !formData.department_id) {
+    if (!formData.title || !formData.description) {
       showToast({ title: 'Missing fields', message: 'Please fill in all required fields.', variant: 'error' });
       return;
     }
+
+    const minSize = Number(formData.min_team_size);
+    const maxSize = Number(formData.max_team_size);
+
+    if (isNaN(minSize) || minSize < 1 || minSize > 20) {
+      showToast({ title: 'Validation error', message: 'Minimum team size must be between 1 and 20.', variant: 'error' });
+      return;
+    }
+    if (isNaN(maxSize) || maxSize < 1 || maxSize > 20) {
+      showToast({ title: 'Validation error', message: 'Maximum team size must be between 1 and 20.', variant: 'error' });
+      return;
+    }
+    if (minSize > maxSize) {
+      showToast({ title: 'Validation error', message: 'Minimum team size cannot exceed maximum team size.', variant: 'error' });
+      return;
+    }
+
+    const deptId = formData.department_id === 'universal' || formData.department_id === '' ? null : formData.department_id;
+
     setSaving(true);
     try {
       if (editing) {
         const { error } = await supabase.from('projects').update({
           title: formData.title,
           description: formData.description,
-          department_id: formData.department_id,
-          max_team_size: Number(formData.max_team_size),
+          department_id: deptId,
+          min_team_size: minSize,
+          max_team_size: maxSize,
           status: formData.status,
         }).eq('id', editing.id);
         if (error) throw error;
@@ -85,8 +106,9 @@ export default function ProjectsClient() {
         const { error } = await supabase.from('projects').insert({
           title: formData.title,
           description: formData.description,
-          department_id: formData.department_id,
-          max_team_size: Number(formData.max_team_size),
+          department_id: deptId,
+          min_team_size: minSize,
+          max_team_size: maxSize,
           status: formData.status,
           created_by: user.id,
         });
@@ -127,7 +149,7 @@ export default function ProjectsClient() {
             <div className={styles.rowInfo}>
               <p className={styles.rowTitle}>{p.title}</p>
               <p className={styles.rowMeta}>
-                {p.departments?.name} · Max {p.max_team_size}
+                {p.departments?.name || 'Universal (All Departments)'} · {p.min_team_size || 1} - {p.max_team_size} members
               </p>
             </div>
             <div className={styles.rowActions}>
@@ -178,19 +200,32 @@ export default function ProjectsClient() {
             id="proj-dept"
             label="Department"
             placeholder="Select department"
-            options={departments.map((d) => ({ value: d.id, label: d.name }))}
+            options={[
+              { value: 'universal', label: 'Universal (All Departments)' },
+              ...departments.map((d) => ({ value: d.id, label: d.name }))
+            ]}
             value={formData.department_id}
             onChange={(e) => setFormData({ ...formData, department_id: e.target.value })}
             required
           />
-          <Input
-            id="proj-size"
-            label="Max Team Size"
-            type="number"
-            value={formData.max_team_size}
-            onChange={(e) => setFormData({ ...formData, max_team_size: e.target.value })}
-            required
-          />
+          <div className={styles.formRow}>
+            <Input
+              id="proj-min-size"
+              label="Min Team Size"
+              type="number"
+              value={formData.min_team_size}
+              onChange={(e) => setFormData({ ...formData, min_team_size: e.target.value })}
+              required
+            />
+            <Input
+              id="proj-max-size"
+              label="Max Team Size"
+              type="number"
+              value={formData.max_team_size}
+              onChange={(e) => setFormData({ ...formData, max_team_size: e.target.value })}
+              required
+            />
+          </div>
           <Select
             id="proj-status"
             label="Status"
