@@ -1,0 +1,69 @@
+/* ===== Avatar Component ===== */
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 2px solid var(--color-border-light);
+  background-color: var(--color-primary);
+  transition: border-color var(--transition-base);
+}
+
+.avatar:hover {
+  border-color: var(--color-action);
+}
+
+/* — Sizes — */
+.sm {
+  width: 32px;
+  height: 32px;
+}
+
+.md {
+  width: 40px;
+  height: 40px;
+}
+
+.lg {
+  width: 56px;
+  height: 56px;
+}
+
+.xl {
+  width: 80px;
+  height: 80px;
+}
+
+/* — Image — */
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* — Fallback Initials — */
+.fallback {
+  color: #ffffff;
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.sm .fallback {
+  font-size: var(--font-size-xs);
+}
+
+.md .fallback {
+  font-size: var(--font-size-sm);
+}
+
+.lg .fallback {
+  font-size: var(--font-size-base);
+}
+
+.xl .fallback {
+  font-size: var(--font-size-xl);
+}

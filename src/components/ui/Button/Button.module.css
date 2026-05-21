@@ -1,0 +1,149 @@
+/* ===== Button Component ===== */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition:
+    background-color var(--transition-base),
+    color var(--transition-base),
+    border-color var(--transition-base),
+    box-shadow var(--transition-base),
+    transform var(--transition-fast),
+    opacity var(--transition-base);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--color-action);
+  outline-offset: 2px;
+}
+
+.button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* — Full Width — */
+.fullWidth {
+  width: 100%;
+}
+
+/* ===== Sizes ===== */
+.sm {
+  padding: 6px 14px;
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-sm);
+  gap: 6px;
+}
+
+.md {
+  padding: 10px 20px;
+  font-size: var(--font-size-md);
+}
+
+.lg {
+  padding: 14px 28px;
+  font-size: var(--font-size-base);
+  border-radius: var(--radius-lg);
+  gap: 10px;
+}
+
+/* ===== Variants ===== */
+
+/* Primary */
+.primary {
+  background-color: var(--color-primary);
+  color: #ffffff;
+}
+
+.primary:hover:not(:disabled) {
+  background-color: var(--color-primary-dark);
+  box-shadow: var(--shadow-md);
+  transform: scale(1.02);
+}
+
+/* Secondary (outlined) */
+.secondary {
+  background-color: transparent;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.secondary:hover:not(:disabled) {
+  background-color: var(--color-surface);
+  border-color: var(--color-primary-dark);
+  box-shadow: var(--shadow-sm);
+  transform: scale(1.02);
+}
+
+/* Ghost */
+.ghost {
+  background-color: transparent;
+  color: var(--color-text);
+}
+
+.ghost:hover:not(:disabled) {
+  background-color: var(--color-surface);
+  transform: scale(1.02);
+}
+
+/* Accent */
+.accent {
+  background-color: var(--color-accent);
+  color: #ffffff;
+}
+
+.accent:hover:not(:disabled) {
+  background-color: var(--color-accent-dark);
+  box-shadow: var(--shadow-md);
+  transform: scale(1.02);
+}
+
+/* Danger */
+.danger {
+  background-color: var(--color-error);
+  color: #ffffff;
+}
+
+.danger:hover:not(:disabled) {
+  background-color: #a93226;
+  box-shadow: var(--shadow-md);
+  transform: scale(1.02);
+}
+
+/* ===== States ===== */
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.loading {
+  position: relative;
+  cursor: wait;
+  pointer-events: none;
+}
+
+/* ===== Icon ===== */
+.icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

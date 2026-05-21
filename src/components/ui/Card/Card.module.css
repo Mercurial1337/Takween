@@ -1,0 +1,60 @@
+/* ===== Card Component ===== */
+.card {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-base),
+    border-color var(--transition-base);
+}
+
+/* — Variants — */
+.default {
+  box-shadow: var(--shadow-xs);
+}
+
+.outlined {
+  background-color: transparent;
+  border: 1.5px solid var(--color-border);
+  box-shadow: none;
+}
+
+.elevated {
+  box-shadow: var(--shadow-md);
+  border-color: transparent;
+}
+
+/* — Hoverable — */
+.hoverable {
+  cursor: pointer;
+}
+
+.hoverable:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-action);
+}
+
+/* — Clickable — */
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:focus-visible {
+  outline: 2px solid var(--color-action);
+  outline-offset: 2px;
+}
+
+/* — Padding — */
+.paddingSm {
+  padding: var(--spacing-sm);
+}
+
+.paddingMd {
+  padding: var(--spacing-lg);
+}
+
+.paddingLg {
+  padding: var(--spacing-xl);
+}

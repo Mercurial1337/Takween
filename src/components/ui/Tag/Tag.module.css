@@ -1,0 +1,66 @@
+/* ===== Tag Component ===== */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+/* — Variants — */
+.default {
+  background-color: var(--color-neutral);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.default:hover {
+  border-color: var(--color-text-muted);
+}
+
+.primary {
+  background-color: var(--color-surface);
+  color: var(--color-primary);
+  border: 1px solid rgba(29, 110, 114, 0.2);
+}
+
+.primary:hover {
+  border-color: var(--color-primary);
+}
+
+/* — Remove Button — */
+.removeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  opacity: 0.6;
+  padding: 0;
+  margin-left: 2px;
+  transition:
+    opacity var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+.removeButton:hover {
+  opacity: 1;
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+.removeButton:focus-visible {
+  outline: 2px solid var(--color-action);
+  outline-offset: 1px;
+}
