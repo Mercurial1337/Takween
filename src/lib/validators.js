@@ -20,7 +20,7 @@ export const registerSchema = z.object({
     .max(20)
     .regex(/^[\d+\-\s()]+$/, 'Please enter a valid phone number'),
   level_id: z.string().uuid('Please select your academic level'),
-  department_id: z.string().uuid('Please select your department'),
+  department_id: z.string().uuid().optional().or(z.literal('')).or(z.null()),
   skills: z.array(z.string()).optional().default([]),
   linkedin_url: z
     .string()

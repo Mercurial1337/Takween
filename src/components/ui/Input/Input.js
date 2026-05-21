@@ -9,6 +9,8 @@ const Input = forwardRef(function Input(
     error,
     helperText,
     icon: Icon,
+    leftElement,
+    rightElement,
     type = 'text',
     id: propId,
     required = false,
@@ -24,6 +26,8 @@ const Input = forwardRef(function Input(
   const inputClasses = [
     styles.input,
     Icon ? styles.hasIcon : '',
+    leftElement ? styles.hasLeftElement : '',
+    rightElement ? styles.hasRightElement : '',
     error ? styles.inputError : '',
     className,
   ]
@@ -40,9 +44,14 @@ const Input = forwardRef(function Input(
       )}
 
       <div className={styles.inputContainer}>
-        {Icon && (
+        {Icon && !leftElement && (
           <span className={styles.iconWrapper}>
             <Icon size={18} />
+          </span>
+        )}
+        {leftElement && (
+          <span className={styles.leftElementWrapper}>
+            {leftElement}
           </span>
         )}
         <input
@@ -58,6 +67,11 @@ const Input = forwardRef(function Input(
           }
           {...rest}
         />
+        {rightElement && (
+          <span className={styles.rightElementWrapper}>
+            {rightElement}
+          </span>
+        )}
       </div>
 
       {error && (

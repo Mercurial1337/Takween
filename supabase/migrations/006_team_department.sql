@@ -38,8 +38,8 @@ BEGIN
     COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'whatsapp_number', ''),
-    (NEW.raw_user_meta_data->>'level_id')::uuid,
-    (NEW.raw_user_meta_data->>'department_id')::uuid,
+    NULLIF(NEW.raw_user_meta_data->>'level_id', '')::uuid,
+    NULLIF(NEW.raw_user_meta_data->>'department_id', '')::uuid,
     NEW.raw_user_meta_data->>'linkedin_url',
     NEW.raw_user_meta_data->>'github_url',
     'student'

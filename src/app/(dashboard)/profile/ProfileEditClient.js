@@ -38,10 +38,16 @@ export default function ProfileEditClient() {
 
   useEffect(() => {
     if (!profile) return;
+    let visiblePhone = profile.whatsapp_number || '';
+    if (visiblePhone.startsWith('+20')) {
+      visiblePhone = visiblePhone.substring(3);
+    } else if (visiblePhone.startsWith('20') && visiblePhone.length > 10) {
+      visiblePhone = visiblePhone.substring(2);
+    }
     Promise.resolve().then(() => {
       setFormData({
         full_name: profile.full_name || '',
-        whatsapp_number: profile.whatsapp_number || '',
+        whatsapp_number: visiblePhone,
         level_id: profile.level_id || '',
         department_id: profile.department_id || '',
         linkedin_url: profile.linkedin_url || '',
@@ -83,14 +89,35 @@ export default function ProfileEditClient() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Format WhatsApp number before validation & submission
+      let rawPhone = formData.whatsapp_number.trim().replace(/[^\d+]/g, '');
+      let formattedWhatsapp = rawPhone;
+      if (rawPhone) {
+        if (rawPhone.startsWith('+20')) {
+          // already fully formatted
+        } else if (rawPhone.startsWith('20') && rawPhone.length > 10) {
+          formattedWhatsapp = '+' + rawPhone;
+        } else {
+          if (rawPhone.startsWith('0')) {
+            rawPhone = rawPhone.substring(1);
+          }
+          formattedWhatsapp = '+20' + rawPhone;
+        }
+      }
+
+      // Check if selected level requires a department (sort_order >= 3)
+      const selectedLvl = levels.find((l) => l.id === formData.level_id);
+      const requiresDepartment = selectedLvl ? selectedLvl.sort_order >= 3 : false;
+      const finalDeptId = requiresDepartment ? (formData.department_id || null) : null;
+
       // Update profile
       const { error } = await supabase
         .from('profiles')
         .update({
           full_name: formData.full_name,
-          whatsapp_number: formData.whatsapp_number,
+          whatsapp_number: formattedWhatsapp,
           level_id: formData.level_id || null,
-          department_id: formData.department_id || null,
+          department_id: finalDeptId,
           linkedin_url: formData.linkedin_url || null,
           github_url: formData.github_url || null,
         })
@@ -147,6 +174,9 @@ export default function ProfileEditClient() {
     );
   }
 
+  const selectedLvl = levels.find((l) => l.id === formData.level_id);
+  const requiresDepartment = selectedLvl ? selectedLvl.sort_order >= 3 : false;
+
   return (
     <div className={styles.page}>
       <PageHeader title="Profile" description="Manage your personal information and skills." />
@@ -173,10 +203,16 @@ export default function ProfileEditClient() {
             <Input
               id="profile-whatsapp"
               label="WhatsApp Number"
-              icon={Phone}
               value={formData.whatsapp_number}
               onChange={(e) => updateField('whatsapp_number', e.target.value)}
               required
+              placeholder="1009426569"
+              leftElement={
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '16px', lineHeight: 1 }}>🇪🇬</span>
+                  <span style={{ color: 'var(--color-text)', opacity: 0.9 }}>+20</span>
+                </span>
+              }
             />
           </div>
 
@@ -186,18 +222,29 @@ export default function ProfileEditClient() {
             placeholder="Select your level"
             options={levels.map((l) => ({ value: l.id, label: l.name }))}
             value={formData.level_id}
-            onChange={(e) => updateField('level_id', e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              const lvl = levels.find((l) => l.id === val);
+              const reqs = lvl ? lvl.sort_order >= 3 : false;
+              setFormData((prev) => ({
+                ...prev,
+                level_id: val,
+                department_id: reqs ? prev.department_id : '',
+              }));
+            }}
           />
 
-          <Select
-            id="profile-department"
-            label="Department"
-            placeholder="Select your department"
-            options={departments.map((d) => ({ value: d.id, label: d.name }))}
-            value={formData.department_id}
-            onChange={(e) => updateField('department_id', e.target.value)}
-            required
-          />
+          {requiresDepartment && (
+            <Select
+              id="profile-department"
+              label="Department"
+              placeholder="Select your department"
+              options={departments.map((d) => ({ value: d.id, label: d.name }))}
+              value={formData.department_id}
+              onChange={(e) => updateField('department_id', e.target.value)}
+              required
+            />
+          )}
 
           <TagInput
             label="Skills"

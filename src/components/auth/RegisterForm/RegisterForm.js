@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Mail, Lock, Phone, Globe, Code2, CheckCircle2 } from 'lucide-react';
+import { User, Mail, Lock, Phone, Globe, Code2, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { Linkedin, Github } from '@/components/ui/Icons/Icons';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/contexts/ToastContext';
@@ -26,6 +26,8 @@ export default function RegisterForm() {
     linkedin_url: '',
     github_url: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [levels, setLevels] = useState([]);
@@ -61,14 +63,49 @@ export default function RegisterForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Format WhatsApp number before validation & submission
+    let rawPhone = formData.whatsapp_number.trim().replace(/[^\d+]/g, '');
+    let formattedWhatsapp = rawPhone;
+    if (rawPhone) {
+      if (rawPhone.startsWith('+20')) {
+        // already fully formatted
+      } else if (rawPhone.startsWith('20') && rawPhone.length > 10) {
+        formattedWhatsapp = '+' + rawPhone;
+      } else {
+        if (rawPhone.startsWith('0')) {
+          rawPhone = rawPhone.substring(1);
+        }
+        formattedWhatsapp = '+20' + rawPhone;
+      }
+    }
+
+    // Custom check for department requirement based on academic level (required for Year 3 and above)
+    const selectedLvl = levels.find((l) => l.id === formData.level_id);
+    const requiresDepartment = selectedLvl ? selectedLvl.sort_order >= 3 : false;
+
+    const dataToValidate = {
+      ...formData,
+      whatsapp_number: formattedWhatsapp,
+      department_id: requiresDepartment ? formData.department_id : null
+    };
+
     // Validate
-    const result = registerSchema.safeParse(formData);
+    const result = registerSchema.safeParse(dataToValidate);
+    
+    const fieldErrors = {};
     if (!result.success) {
-      const fieldErrors = {};
       result.error.errors.forEach((err) => {
         const field = err.path[0];
         if (!fieldErrors[field]) fieldErrors[field] = err.message;
       });
+    }
+
+    // Conditionally require department only if academic level requires it
+    if (requiresDepartment && !formData.department_id) {
+      fieldErrors.department_id = 'Please select your department';
+    }
+
+    if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors);
       return;
     }
@@ -77,18 +114,18 @@ export default function RegisterForm() {
     try {
       // 1. Sign up (include metadata so the DB trigger can create the profile and skills automatically)
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
+        email: dataToValidate.email,
+        password: dataToValidate.password,
         options: {
           emailRedirectTo: `${window.location.origin}/api/auth/callback`,
           data: {
-            full_name: formData.full_name,
-            whatsapp_number: formData.whatsapp_number,
-            level_id: formData.level_id || null,
-            department_id: formData.department_id || null,
-            linkedin_url: formData.linkedin_url || null,
-            github_url: formData.github_url || null,
-            skills: formData.skills,
+            full_name: dataToValidate.full_name,
+            whatsapp_number: formattedWhatsapp,
+            level_id: dataToValidate.level_id || null,
+            department_id: dataToValidate.department_id || null,
+            linkedin_url: dataToValidate.linkedin_url || null,
+            github_url: dataToValidate.github_url || null,
+            skills: dataToValidate.skills,
           },
         },
       });
@@ -118,13 +155,13 @@ export default function RegisterForm() {
       // 2. Client-side fallback / direct upsert (if session exists, e.g. email confirmation is turned off)
       const { error: profileError } = await supabase.from('profiles').upsert({
         id: userId,
-        full_name: formData.full_name,
-        email: formData.email,
-        whatsapp_number: formData.whatsapp_number,
-        level_id: formData.level_id || null,
-        department_id: formData.department_id || null,
-        linkedin_url: formData.linkedin_url || null,
-        github_url: formData.github_url || null,
+        full_name: dataToValidate.full_name,
+        email: dataToValidate.email,
+        whatsapp_number: formattedWhatsapp,
+        level_id: dataToValidate.level_id || null,
+        department_id: dataToValidate.department_id || null,
+        linkedin_url: dataToValidate.linkedin_url || null,
+        github_url: dataToValidate.github_url || null,
       });
 
       if (profileError) {
@@ -171,6 +208,9 @@ export default function RegisterForm() {
       setLoading(false);
     }
   };
+
+  const selectedLvl = levels.find((l) => l.id === formData.level_id);
+  const requiresDepartment = selectedLvl ? selectedLvl.sort_order >= 3 : false;
 
   if (verificationSent) {
     return (
@@ -219,24 +259,44 @@ export default function RegisterForm() {
             <Input
               id="reg-password"
               label="Password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               icon={Lock}
               value={formData.password}
               onChange={(e) => updateField('password', e.target.value)}
               error={errors.password}
               required
               autoComplete="new-password"
+              rightElement={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              }
             />
             <Input
               id="reg-confirm"
               label="Confirm Password"
-              type="password"
+              type={showConfirmPassword ? 'text' : 'password'}
               icon={Lock}
               value={formData.confirm_password}
               onChange={(e) => updateField('confirm_password', e.target.value)}
               error={errors.confirm_password}
               required
               autoComplete="new-password"
+              rightElement={
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              }
             />
           </div>
         </div>
@@ -249,13 +309,19 @@ export default function RegisterForm() {
           <Input
             id="reg-whatsapp"
             label="WhatsApp Number"
-            icon={Phone}
             value={formData.whatsapp_number}
             onChange={(e) => updateField('whatsapp_number', e.target.value)}
             error={errors.whatsapp_number}
             helperText="Only visible to your team members"
             required
             autoComplete="tel"
+            placeholder="1009426569"
+            leftElement={
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '16px', lineHeight: 1 }}>🇪🇬</span>
+                <span style={{ color: 'var(--color-text)', opacity: 0.9 }}>+20</span>
+              </span>
+            }
           />
           <Select
             id="reg-level"
@@ -263,20 +329,37 @@ export default function RegisterForm() {
             placeholder="Select your level"
             options={levels.map((l) => ({ value: l.id, label: l.name }))}
             value={formData.level_id}
-            onChange={(e) => updateField('level_id', e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              const lvl = levels.find((l) => l.id === val);
+              const reqs = lvl ? lvl.sort_order >= 3 : false;
+              setFormData((prev) => ({
+                ...prev,
+                level_id: val,
+                department_id: reqs ? prev.department_id : '',
+              }));
+              if (errors.level_id) {
+                setErrors((prev) => ({ ...prev, level_id: undefined }));
+              }
+              if (!reqs && errors.department_id) {
+                setErrors((prev) => ({ ...prev, department_id: undefined }));
+              }
+            }}
             error={errors.level_id}
             required
           />
-          <Select
-            id="reg-department"
-            label="Department"
-            placeholder="Select your department"
-            options={departments.map((d) => ({ value: d.id, label: d.name }))}
-            value={formData.department_id}
-            onChange={(e) => updateField('department_id', e.target.value)}
-            error={errors.department_id}
-            required
-          />
+          {requiresDepartment && (
+            <Select
+              id="reg-department"
+              label="Department"
+              placeholder="Select your department"
+              options={departments.map((d) => ({ value: d.id, label: d.name }))}
+              value={formData.department_id}
+              onChange={(e) => updateField('department_id', e.target.value)}
+              error={errors.department_id}
+              required
+            />
+          )}
         </div>
       </div>
 

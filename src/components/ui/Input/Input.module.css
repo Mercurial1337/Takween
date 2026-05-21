@@ -60,6 +60,14 @@
   padding-left: 40px;
 }
 
+.hasLeftElement {
+  padding-left: 78px;
+}
+
+.hasRightElement {
+  padding-right: 40px;
+}
+
 .iconWrapper {
   position: absolute;
   left: 12px;
@@ -70,6 +78,39 @@
   align-items: center;
   pointer-events: none;
   transition: color var(--transition-base);
+}
+
+.leftElementWrapper {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  border-right: 1.5px solid var(--color-border);
+  padding-right: 8px;
+  height: 60%;
+  pointer-events: none;
+}
+
+.rightElementWrapper {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: color var(--transition-base);
+}
+
+.rightElementWrapper:hover {
+  color: var(--color-action);
 }
 
 .inputContainer:focus-within .iconWrapper {
