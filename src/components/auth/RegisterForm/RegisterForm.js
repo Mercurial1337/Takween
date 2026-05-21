@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Mail, Lock, Phone, Globe, Code2, Linkedin, Github } from 'lucide-react';
+import { User, Mail, Lock, Phone, Globe, Code2 } from 'lucide-react';
+import { Linkedin, Github } from '@/components/ui/Icons/Icons';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/contexts/ToastContext';
 import { registerSchema } from '@/lib/validators';

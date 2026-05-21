@@ -3,7 +3,8 @@
 import { useEffect, useState, useMemo, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { User, Mail, Phone, Globe, Code2, ArrowLeft, ShieldAlert, Award, MessageSquare, Linkedin, Github } from 'lucide-react';
+import { User, Mail, Phone, Globe, Code2, ArrowLeft, ShieldAlert, Award, MessageSquare } from 'lucide-react';
+import { Github, Linkedin } from '@/components/ui/Icons/Icons';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import Card from '@/components/ui/Card/Card';

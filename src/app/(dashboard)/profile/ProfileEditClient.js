@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { User, Mail, Phone, Globe, Code2, Save, Linkedin, Github } from 'lucide-react';
+import { User, Mail, Phone, Globe, Code2, Save } from 'lucide-react';
+import { Linkedin, Github } from '@/components/ui/Icons/Icons';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
