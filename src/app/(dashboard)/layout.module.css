@@ -1,0 +1,11 @@
+.main {
+  padding-top: 80px;
+  padding-bottom: var(--space-3xl);
+  min-height: calc(100dvh - 200px);
+}
+
+.container {
+  max-width: var(--max-w-xl);
+  margin: 0 auto;
+  padding: 0 var(--space-lg);
+}
