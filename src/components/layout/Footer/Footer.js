@@ -34,7 +34,7 @@ export default function Footer() {
 
         <div className={styles.bottom}>
           <p className={styles.copyright}>
-            {currentYear} Takween. Built with <Heart size={14} className={styles.heart} /> for students.
+            &copy; {currentYear} Takween. All rights reserved.
           </p>
         </div>
       </div>
