@@ -1,0 +1,70 @@
+.page {
+  animation: fadeIn var(--transition-base) both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.notification {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-lg);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.notification:hover {
+  background-color: var(--color-surface);
+}
+
+.unread {
+  border-left: 3px solid var(--color-action);
+  background-color: rgba(225, 245, 238, 0.5);
+}
+
+.notifContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.notifHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+
+.time {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.notifTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+  margin-bottom: 2px;
+}
+
+.notifBody {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.unreadDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--color-action);
+  flex-shrink: 0;
+  margin-left: var(--space-md);
+}
