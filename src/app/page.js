@@ -6,6 +6,12 @@ import FeaturesSection from '@/components/landing/FeaturesSection/FeaturesSectio
 import CTASection from '@/components/landing/CTASection/CTASection';
 import styles from './page.module.css';
 
+export const metadata = {
+  title: 'Takween — University Course & Graduation Project Team Matchmaker',
+  description: 'Ditch messy WhatsApp groups. Discover active teams, match by skills, and form graduation or course project groups smoothly.',
+};
+
+
 export default function HomePage() {
   return (
     <>
