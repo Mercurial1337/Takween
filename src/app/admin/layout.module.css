@@ -1,0 +1,127 @@
+.layout {
+  display: flex;
+  min-height: 100dvh;
+}
+
+.sidebar {
+  width: 260px;
+  min-width: 260px;
+  background: white;
+  border-right: 1px solid var(--color-border-light);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+}
+
+.sidebarHeader {
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--color-border-light);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.logo {
+  font-size: var(--text-lg);
+  font-weight: var(--font-bold);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.logo:hover {
+  text-decoration: none;
+  opacity: 0.85;
+}
+
+.adminBadge {
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--color-accent);
+  background-color: var(--color-alt-surface);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.nav {
+  flex: 1;
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.navLink:hover {
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  text-decoration: none;
+}
+
+.active {
+  color: var(--color-primary);
+  background-color: var(--color-surface);
+}
+
+.sidebarFooter {
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.backLink {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.backLink:hover {
+  color: var(--color-action);
+  text-decoration: none;
+}
+
+.main {
+  flex: 1;
+  background-color: var(--color-neutral);
+  overflow-y: auto;
+}
+
+.content {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: var(--space-2xl) var(--space-xl);
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 60px;
+    min-width: 60px;
+  }
+
+  .sidebarHeader .logo,
+  .adminBadge,
+  .sidebarFooter {
+    display: none;
+  }
+
+  .navLink {
+    justify-content: center;
+    padding: var(--space-sm);
+  }
+
+  .navLink span {
+    display: none;
+  }
+}
