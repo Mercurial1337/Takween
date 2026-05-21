@@ -15,6 +15,7 @@ export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState({ type: null, message: '' });
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
@@ -32,9 +33,13 @@ export default function LoginForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate()) {
+      setSubmitStatus({ type: 'error', message: 'Please correct the errors in the form.' });
+      return;
+    }
 
     setLoading(true);
+    setSubmitStatus({ type: null, message: '' });
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -47,6 +52,7 @@ export default function LoginForm() {
           message: error.message,
           variant: 'error',
         });
+        setSubmitStatus({ type: 'error', message: error.message });
         return;
       }
 
@@ -55,6 +61,7 @@ export default function LoginForm() {
         message: 'You have been signed in successfully.',
         variant: 'success',
       });
+      setSubmitStatus({ type: 'success', message: 'Welcome back! Redirecting...' });
 
       const redirect = searchParams.get('redirect') || '/dashboard';
       router.push(redirect);
@@ -65,6 +72,7 @@ export default function LoginForm() {
         message: 'Please try again later.',
         variant: 'error',
       });
+      setSubmitStatus({ type: 'error', message: 'Something went wrong. Please try again later.' });
     } finally {
       setLoading(false);
     }
@@ -72,6 +80,27 @@ export default function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className={styles.form} noValidate>
+      {submitStatus.message && (
+        <div style={{
+          padding: 'var(--space-md)',
+          borderRadius: 'var(--radius-md)',
+          backgroundColor: submitStatus.type === 'error' ? 'var(--color-error-bg)' : 'var(--color-success-bg)',
+          border: `1px solid ${submitStatus.type === 'error' ? 'var(--color-error)' : 'var(--color-success)'}`,
+          color: submitStatus.type === 'error' ? 'var(--color-error)' : 'var(--color-success)',
+          fontSize: 'var(--text-sm)',
+          fontWeight: 'var(--font-semibold)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-sm)',
+          marginBottom: 'var(--space-md)',
+          boxShadow: 'var(--shadow-sm)'
+        }}>
+          <span style={{ fontSize: '18px', display: 'flex', alignItems: 'center' }}>
+            {submitStatus.type === 'error' ? '⚠️' : '✅'}
+          </span>
+          <span>{submitStatus.message}</span>
+        </div>
+      )}
       <div className={styles.fields}>
         <Input
           id="login-email"

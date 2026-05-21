@@ -49,14 +49,17 @@ export default function ProjectDetailClient({ id }) {
   const filteredTeams = useMemo(() => {
     if (!project) return [];
     
-    // If student, strictly segregate to their department
-    if (user && profile && profile.role === 'student') {
+    const isGraduationProject = project.title?.toLowerCase().includes('graduation');
+    const projectRequiresDepartment = isGraduationProject || !!project.department_id;
+    
+    // If student, strictly segregate to their department if the project requires it
+    if (user && profile && profile.role === 'student' && projectRequiresDepartment) {
       const studentDeptId = profile.department_id;
       if (!studentDeptId) return []; // Require department to see teams
       return teams.filter(t => t.department_id === studentDeptId);
     }
     
-    // If admin or guest, support filter dropdown
+    // If admin, guest, or project is universal, support filter dropdown or show all
     if (deptFilter && deptFilter !== 'all') {
       return teams.filter(t => t.department_id === deptFilter);
     }
@@ -205,7 +208,11 @@ export default function ProjectDetailClient({ id }) {
   // Create team
   const handleCreateTeam = async () => {
     if (!user) { router.push('/login'); return; }
-    if (!profile || !profile.department_id) {
+    
+    const isGraduationProject = project?.title?.toLowerCase().includes('graduation');
+    const projectRequiresDepartment = isGraduationProject || !!project?.department_id;
+
+    if (projectRequiresDepartment && (!profile || !profile.department_id)) {
       showToast({ title: 'Department required', message: 'Please select your department in your profile settings to create a team.', variant: 'warning' });
       return;
     }
@@ -216,7 +223,7 @@ export default function ProjectDetailClient({ id }) {
         .insert({ 
           project_id: id, 
           owner_id: user.id,
-          department_id: profile.department_id
+          department_id: profile?.department_id || null
         })
         .select()
         .single();
@@ -239,13 +246,19 @@ export default function ProjectDetailClient({ id }) {
   // Send join request
   const handleJoinRequest = async () => {
     if (!user) { router.push('/login'); return; }
-    if (!profile || !profile.department_id) {
-      showToast({ title: 'Department required', message: 'Please set your department in your profile settings before requesting to join.', variant: 'warning' });
-      return;
-    }
-    if (profile.department_id !== selectedTeam.department_id) {
-      showToast({ title: 'Department mismatch', message: 'You can only request to join teams within your own department.', variant: 'error' });
-      return;
+    
+    const isGraduationProject = project?.title?.toLowerCase().includes('graduation');
+    const projectRequiresDepartment = isGraduationProject || !!project?.department_id;
+
+    if (projectRequiresDepartment) {
+      if (!profile || !profile.department_id) {
+        showToast({ title: 'Department required', message: 'Please set your department in your profile settings before requesting to join.', variant: 'warning' });
+        return;
+      }
+      if (profile.department_id !== selectedTeam.department_id) {
+        showToast({ title: 'Department mismatch', message: 'You can only request to join teams within your own department.', variant: 'error' });
+        return;
+      }
     }
     setActionLoading(true);
     try {
@@ -443,8 +456,11 @@ export default function ProjectDetailClient({ id }) {
     );
   }
 
+  const isGraduationProject = project?.title?.toLowerCase().includes('graduation');
+  const projectRequiresDepartment = isGraduationProject || !!project?.department_id;
+
   // Segment banner check for student
-  if (user && profile && profile.role === 'student' && !profile.department_id) {
+  if (user && profile && profile.role === 'student' && projectRequiresDepartment && !profile.department_id) {
     return (
       <div className={styles.page}>
         <Link href="/projects" className={styles.backLink}>

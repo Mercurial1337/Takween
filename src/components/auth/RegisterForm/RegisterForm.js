@@ -34,6 +34,7 @@ export default function RegisterForm() {
   const [departments, setDepartments] = useState([]);
   const [skillSuggestions, setSkillSuggestions] = useState([]);
   const [verificationSent, setVerificationSent] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState({ type: null, message: '' });
   const router = useRouter();
   const { showToast } = useToast();
   const supabase = useMemo(() => createClient(), []);
@@ -107,10 +108,12 @@ export default function RegisterForm() {
 
     if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors);
+      setSubmitStatus({ type: 'error', message: 'Please correct the errors in the form.' });
       return;
     }
 
     setLoading(true);
+    setSubmitStatus({ type: null, message: '' });
     try {
       // 1. Sign up (include metadata so the DB trigger can create the profile and skills automatically)
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
@@ -132,12 +135,14 @@ export default function RegisterForm() {
 
       if (signUpError) {
         showToast({ title: 'Registration failed', message: signUpError.message, variant: 'error' });
+        setSubmitStatus({ type: 'error', message: signUpError.message });
         return;
       }
 
       const userId = authData.user?.id;
       if (!userId) {
         showToast({ title: 'Registration failed', message: 'Could not create account.', variant: 'error' });
+        setSubmitStatus({ type: 'error', message: 'Could not create account.' });
         return;
       }
 
@@ -149,6 +154,7 @@ export default function RegisterForm() {
           message: 'Please check your inbox to confirm your email.',
           variant: 'success',
         });
+        setSubmitStatus({ type: 'success', message: 'Verification email sent. Please check your inbox!' });
         return;
       }
 
@@ -167,6 +173,7 @@ export default function RegisterForm() {
       if (profileError) {
         console.error('Profile creation error:', profileError);
         showToast({ title: 'Profile setup failed', message: profileError.message, variant: 'error' });
+        setSubmitStatus({ type: 'error', message: profileError.message });
         return;
       }
 
@@ -200,10 +207,12 @@ export default function RegisterForm() {
       }
 
       showToast({ title: 'Welcome to Takween', message: 'Your account has been created.', variant: 'success' });
+      setSubmitStatus({ type: 'success', message: 'Your account has been created! Redirecting...' });
       router.push('/dashboard');
       router.refresh();
     } catch (err) {
       showToast({ title: 'Something went wrong', message: 'Please try again later.', variant: 'error' });
+      setSubmitStatus({ type: 'error', message: 'Something went wrong. Please try again later.' });
     } finally {
       setLoading(false);
     }
@@ -230,6 +239,26 @@ export default function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className={styles.form} noValidate>
+      {submitStatus.message && (
+        <div style={{
+          padding: 'var(--space-md)',
+          borderRadius: 'var(--radius-md)',
+          backgroundColor: submitStatus.type === 'error' ? 'var(--color-error-bg)' : 'var(--color-success-bg)',
+          border: `1px solid ${submitStatus.type === 'error' ? 'var(--color-error)' : 'var(--color-success)'}`,
+          color: submitStatus.type === 'error' ? 'var(--color-error)' : 'var(--color-success)',
+          fontSize: 'var(--text-sm)',
+          fontWeight: 'var(--font-semibold)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 'var(--space-sm)',
+          boxShadow: 'var(--shadow-sm)'
+        }}>
+          <span style={{ fontSize: '18px', display: 'flex', alignItems: 'center' }}>
+            {submitStatus.type === 'error' ? '⚠️' : '✅'}
+          </span>
+          <span>{submitStatus.message}</span>
+        </div>
+      )}
       {/* Account Details */}
       <div className={styles.section}>
         <h3 className={styles.sectionTitle}>Account Details</h3>
