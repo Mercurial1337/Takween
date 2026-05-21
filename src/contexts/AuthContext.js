@@ -12,7 +12,9 @@ export function AuthProvider({ children }) {
 
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(isConfigured)
+  const [authLoading, setAuthLoading] = useState(isConfigured)
+  const [profileLoading, setProfileLoading] = useState(false)
+  const loading = authLoading || profileLoading
   const router = useRouter()
 
   const fetchProfile = async (userId) => {
@@ -43,6 +45,42 @@ export function AuthProvider({ children }) {
     router.push('/')
   }
 
+  // Load profile whenever user changes
+  useEffect(() => {
+    if (!supabase) return
+
+    if (!user) {
+      setProfile(null)
+      setProfileLoading(false)
+      return
+    }
+
+    let isMounted = true
+
+    const loadProfile = async () => {
+      setProfileLoading(true)
+      try {
+        const profileData = await fetchProfile(user.id)
+        if (isMounted) {
+          setProfile(profileData)
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error)
+      } finally {
+        if (isMounted) {
+          setProfileLoading(false)
+        }
+      }
+    }
+
+    loadProfile()
+
+    return () => {
+      isMounted = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
+
   useEffect(() => {
     if (!supabase) return;
 
@@ -52,29 +90,22 @@ export function AuthProvider({ children }) {
 
         if (currentUser) {
           setUser(currentUser)
-          const profileData = await fetchProfile(currentUser.id)
-          setProfile(profileData)
         }
       } catch (error) {
         console.error('Error initializing auth:', error)
       } finally {
-        setLoading(false)
+        setAuthLoading(false)
       }
     }
 
     initAuth()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
+      (event, session) => {
+        if (session?.user) {
           setUser(session.user)
-          const profileData = await fetchProfile(session.user.id)
-          setProfile(profileData)
-        } else if (event === 'SIGNED_OUT') {
+        } else {
           setUser(null)
-          setProfile(null)
-        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-          setUser(session.user)
         }
       }
     )

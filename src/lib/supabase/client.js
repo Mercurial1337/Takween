@@ -28,6 +28,10 @@ export function createClient() {
     }
   }
 
-  client = createBrowserClient(url, key)
+  client = createBrowserClient(url, key, {
+    auth: {
+      lock: async (name, acquireTimeout, fn) => fn(),
+    },
+  })
   return client
 }
