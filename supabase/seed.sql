@@ -5,25 +5,18 @@
 
 -- ---- DEPARTMENTS ----
 INSERT INTO departments (name) VALUES
-  ('Computer Science'),
-  ('Information Technology'),
-  ('Software Engineering'),
-  ('Data Science'),
-  ('Cybersecurity'),
-  ('Artificial Intelligence'),
-  ('Information Systems'),
-  ('Electrical Engineering'),
-  ('Mechanical Engineering'),
-  ('Business Administration')
+  ('CS'),
+  ('IS'),
+  ('SC'),
+  ('CSys')
 ON CONFLICT (name) DO NOTHING;
 
 -- ---- LEVELS ----
 INSERT INTO levels (name, sort_order) VALUES
-  ('1st Year', 1),
-  ('2nd Year', 2),
-  ('3rd Year', 3),
-  ('4th Year', 4),
-  ('5th Year', 5)
+  ('Year 1', 1),
+  ('Year 2', 2),
+  ('Year 3', 3),
+  ('Year 4', 4)
 ON CONFLICT (name) DO NOTHING;
 
 -- ---- PREDEFINED SKILLS ----
