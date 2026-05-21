@@ -12,7 +12,7 @@ const inter = Inter({
 
 export const metadata = {
   title: {
-    default: "Takween — Find Your Team",
+    default: "Takween | Assemble your team",
     template: "%s | Takween",
   },
   description:
