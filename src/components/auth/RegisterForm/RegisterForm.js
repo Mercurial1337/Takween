@@ -41,14 +41,35 @@ export default function RegisterForm() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [levelsRes, deptsRes, skillsRes] = await Promise.all([
-        supabase.from('levels').select('*').order('sort_order'),
-        supabase.from('departments').select('*').order('name'),
-        supabase.from('skills').select('*').order('name'),
-      ]);
-      if (levelsRes.data) setLevels(levelsRes.data);
-      if (deptsRes.data) setDepartments(deptsRes.data);
-      if (skillsRes.data) setSkillSuggestions(skillsRes.data);
+      try {
+        const [levelsRes, deptsRes, skillsRes] = await Promise.all([
+          supabase.from('levels').select('*').order('sort_order'),
+          supabase.from('departments').select('*').order('name'),
+          supabase.from('skills').select('*').order('name'),
+        ]);
+
+        if (levelsRes.error) {
+          console.error('Error fetching levels:', levelsRes.error);
+          showToast({ title: 'Error', message: 'Failed to load academic levels. Check console.', variant: 'error' });
+        } else if (levelsRes.data) {
+          setLevels(levelsRes.data);
+          if (levelsRes.data.length === 0) console.warn('Levels data is empty. Seed data might be missing or env variables not set.');
+        }
+
+        if (deptsRes.error) {
+          console.error('Error fetching departments:', deptsRes.error);
+        } else if (deptsRes.data) {
+          setDepartments(deptsRes.data);
+        }
+
+        if (skillsRes.error) {
+          console.error('Error fetching skills:', skillsRes.error);
+        } else if (skillsRes.data) {
+          setSkillSuggestions(skillsRes.data);
+        }
+      } catch (err) {
+        console.error('Unexpected error fetching reference data:', err);
+      }
     };
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -95,9 +116,10 @@ export default function RegisterForm() {
     
     const fieldErrors = {};
     if (!result.success) {
-      result.error.errors.forEach((err) => {
+      const issues = result.error?.issues || result.error?.errors || [];
+      issues.forEach((err) => {
         const field = err.path[0];
-        if (!fieldErrors[field]) fieldErrors[field] = err.message;
+        if (field && !fieldErrors[field]) fieldErrors[field] = err.message;
       });
     }
 
@@ -139,13 +161,6 @@ export default function RegisterForm() {
         return;
       }
 
-      const userId = authData.user?.id;
-      if (!userId) {
-        showToast({ title: 'Registration failed', message: 'Could not create account.', variant: 'error' });
-        setSubmitStatus({ type: 'error', message: 'Could not create account.' });
-        return;
-      }
-
       // Check if a session was created. If not, confirmation is required by Supabase.
       if (!authData.session) {
         setVerificationSent(true);
@@ -155,6 +170,13 @@ export default function RegisterForm() {
           variant: 'success',
         });
         setSubmitStatus({ type: 'success', message: 'Verification email sent. Please check your inbox!' });
+        return;
+      }
+
+      const userId = authData.user?.id;
+      if (!userId) {
+        showToast({ title: 'Registration failed', message: 'Could not create account.', variant: 'error' });
+        setSubmitStatus({ type: 'error', message: 'Could not create account.' });
         return;
       }
 
