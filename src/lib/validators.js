@@ -120,6 +120,14 @@ export const joinRequestActionSchema = z.object({
 });
 
 // ============================================================================
+// MERGE REQUEST SCHEMAS
+// ============================================================================
+
+export const mergeRequestSchema = z.object({
+  message: z.string().max(500, 'Message cannot exceed 500 characters').optional().or(z.literal('')),
+});
+
+// ============================================================================
 // ADMIN SCHEMAS
 // ============================================================================
 

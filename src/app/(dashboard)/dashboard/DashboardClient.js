@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Users, FolderOpen, Bell, ArrowRight, Plus, Check, X } from 'lucide-react';
+import { Users, FolderOpen, Bell, ArrowRight, Plus, Check, X, Merge, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { createClient } from '@/lib/supabase/client';
@@ -27,6 +27,13 @@ export default function DashboardClient() {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [replyMessage, setReplyMessage] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Merge request state
+  const [pendingMergeRequests, setPendingMergeRequests] = useState([]);
+  const [selectedMergeRequest, setSelectedMergeRequest] = useState(null);
+  const [mergeMembers, setMergeMembers] = useState([]);
+  const [mergeReplyMessage, setMergeReplyMessage] = useState('');
+
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
@@ -110,6 +117,76 @@ export default function DashboardClient() {
           .eq('is_read', false);
 
         setUnreadNotifications(count || 0);
+
+        // Fetch pending merge requests where user is the target team owner
+        const ownedTeamIds = (memberData || [])
+          .filter(m => m.role === 'owner')
+          .map(m => m.team_id);
+
+        if (ownedTeamIds.length > 0) {
+          const { data: mergeData } = await supabase
+            .from('team_merge_requests')
+            .select(`
+              id,
+              source_team_id,
+              target_team_id,
+              message,
+              status,
+              created_at
+            `)
+            .eq('status', 'pending')
+            .in('target_team_id', ownedTeamIds);
+
+          if (mergeData && mergeData.length > 0) {
+            // Enrich with source team data
+            const enrichedMerge = await Promise.all(
+              mergeData.map(async (mr) => {
+                // Source team info
+                const { data: sourceTeam } = await supabase
+                  .from('teams')
+                  .select(`
+                    id,
+                    owner_id,
+                    project_id,
+                    profiles:owner_id (id, full_name, email, avatar_url),
+                    projects:project_id (id, title, max_team_size)
+                  `)
+                  .eq('id', mr.source_team_id)
+                  .single();
+
+                // Source team member count
+                const { count: srcRegistered } = await supabase
+                  .from('team_members')
+                  .select('*', { count: 'exact', head: true })
+                  .eq('team_id', mr.source_team_id);
+                const { count: srcManual } = await supabase
+                  .from('manual_members')
+                  .select('*', { count: 'exact', head: true })
+                  .eq('team_id', mr.source_team_id);
+
+                // Target team member count
+                const { count: tgtRegistered } = await supabase
+                  .from('team_members')
+                  .select('*', { count: 'exact', head: true })
+                  .eq('team_id', mr.target_team_id);
+                const { count: tgtManual } = await supabase
+                  .from('manual_members')
+                  .select('*', { count: 'exact', head: true })
+                  .eq('team_id', mr.target_team_id);
+
+                return {
+                  ...mr,
+                  sourceTeam: sourceTeam,
+                  sourceMemberCount: (srcRegistered || 0) + (srcManual || 0),
+                  targetMemberCount: (tgtRegistered || 0) + (tgtManual || 0),
+                  maxTeamSize: sourceTeam?.projects?.max_team_size || 0,
+                  projectTitle: sourceTeam?.projects?.title || 'Unknown',
+                };
+              })
+            );
+            setPendingMergeRequests(enrichedMerge);
+          }
+        }
       } catch (err) {
         console.error('Dashboard fetch error:', err);
       } finally {
@@ -190,6 +267,120 @@ export default function DashboardClient() {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  // Handle merge request actions
+  const handleMergeAction = async (action) => {
+    if (!selectedMergeRequest) return;
+    setActionLoading(true);
+    try {
+      const projectTitle = selectedMergeRequest.projectTitle;
+      const sourceOwnerName = selectedMergeRequest.sourceTeam?.profiles?.full_name || 'Unknown';
+      const sourceOwnerEmail = selectedMergeRequest.sourceTeam?.profiles?.email;
+      const sourceOwnerId = selectedMergeRequest.sourceTeam?.owner_id;
+
+      if (action === 'accepted') {
+        // Call the stored procedure
+        const { error: rpcError } = await supabase.rpc('merge_teams', {
+          p_request_id: selectedMergeRequest.id,
+        });
+        if (rpcError) throw rpcError;
+
+        // Notify source team owner
+        if (sourceOwnerId) {
+          await supabase.from('notifications').insert({
+            user_id: sourceOwnerId,
+            type: 'merge_accepted',
+            title: 'Team merge accepted',
+            body: `Your team merge request for ${projectTitle} has been accepted by ${profile?.full_name}.${mergeReplyMessage ? ` Message: "${mergeReplyMessage}"` : ''}`,
+            metadata: { target_team_id: selectedMergeRequest.target_team_id },
+          });
+        }
+
+        // Send email
+        if (sourceOwnerEmail) {
+          try {
+            await fetch('/api/email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'merge_accepted',
+                recipientEmail: sourceOwnerEmail,
+                recipientName: sourceOwnerName,
+                actorName: profile?.full_name,
+                projectName: projectTitle,
+                message: mergeReplyMessage || null,
+              }),
+            });
+          } catch (emailErr) {
+            console.error('Failed to send merge accepted email:', emailErr);
+          }
+        }
+
+        showToast({ title: 'Teams merged', message: 'All members have been transferred to your team.', variant: 'success' });
+      } else {
+        // Reject: just update the status
+        await supabase
+          .from('team_merge_requests')
+          .update({ status: 'rejected' })
+          .eq('id', selectedMergeRequest.id);
+
+        // Notify source team owner
+        if (sourceOwnerId) {
+          await supabase.from('notifications').insert({
+            user_id: sourceOwnerId,
+            type: 'merge_rejected',
+            title: 'Team merge declined',
+            body: `Your team merge request for ${projectTitle} was declined.${mergeReplyMessage ? ` Message: "${mergeReplyMessage}"` : ''}`,
+            metadata: { target_team_id: selectedMergeRequest.target_team_id },
+          });
+        }
+
+        // Send email
+        if (sourceOwnerEmail) {
+          try {
+            await fetch('/api/email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'merge_rejected',
+                recipientEmail: sourceOwnerEmail,
+                recipientName: sourceOwnerName,
+                actorName: profile?.full_name,
+                projectName: projectTitle,
+                message: mergeReplyMessage || null,
+              }),
+            });
+          } catch (emailErr) {
+            console.error('Failed to send merge rejected email:', emailErr);
+          }
+        }
+
+        showToast({ title: 'Merge request declined', variant: 'info' });
+      }
+
+      setPendingMergeRequests(prev => prev.filter(mr => mr.id !== selectedMergeRequest.id));
+      setSelectedMergeRequest(null);
+      setMergeReplyMessage('');
+      setMergeMembers([]);
+    } catch (err) {
+      showToast({ title: 'Error', message: err.message, variant: 'error' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // When a merge request is selected for review, fetch the source team members
+  const openMergeReview = async (mr) => {
+    setSelectedMergeRequest(mr);
+    setMergeReplyMessage('');
+
+    // Fetch source team members for display
+    const { data: members } = await supabase
+      .from('team_members')
+      .select('*, profiles:user_id (id, full_name, avatar_url, levels:level_id (name))')
+      .eq('team_id', mr.source_team_id);
+    setMergeMembers(members || []);
   };
 
   if (authLoading || loading) {
@@ -319,6 +510,49 @@ export default function DashboardClient() {
         </section>
       )}
 
+      {/* Pending Team Merge Requests */}
+      {pendingMergeRequests.length > 0 && (
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>
+              Team Merge Requests
+              <Badge variant="accent" size="sm" style={{ marginLeft: 'var(--space-sm)' }}>New</Badge>
+            </h2>
+          </div>
+          <div className={styles.requestList}>
+            {pendingMergeRequests.map((mr) => (
+              <Card key={mr.id} className={styles.mergeRequestCard}>
+                <div>
+                  <div className={styles.mergeRequestHeader}>
+                    <Badge variant="accent" size="sm">
+                      <Merge size={10} /> Team Merge
+                    </Badge>
+                  </div>
+                  <p className={styles.requestName}>
+                    {mr.sourceTeam?.profiles?.full_name}&apos;s Team
+                  </p>
+                  <p className={styles.requestProject}>
+                    wants to merge into your team for {mr.projectTitle}
+                  </p>
+                  <p className={styles.mergeRequestMeta}>
+                    <Users size={12} />
+                    {mr.sourceMemberCount} members → {mr.targetMemberCount + mr.sourceMemberCount}/{mr.maxTeamSize} total
+                  </p>
+                  {mr.message && <p className={styles.requestMessage}>&ldquo;{mr.message}&rdquo;</p>}
+                </div>
+                <button
+                  className={styles.requestLink}
+                  style={{ border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 'var(--space-xs)', color: 'var(--color-primary)', fontWeight: 'var(--font-medium)', padding: 'var(--space-xs)' }}
+                  onClick={() => openMergeReview(mr)}
+                >
+                  Review <ArrowRight size={14} />
+                </button>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Review Request Modal */}
       <Modal
         isOpen={!!selectedRequest}
@@ -382,6 +616,133 @@ export default function DashboardClient() {
               value={replyMessage}
               onChange={(e) => setReplyMessage(e.target.value)}
               placeholder="e.g. Welcome to the team! I'll add you to our group."
+            />
+          </div>
+        )}
+      </Modal>
+
+      {/* Merge Review Modal */}
+      <Modal
+        isOpen={!!selectedMergeRequest}
+        onClose={() => { setSelectedMergeRequest(null); setMergeMembers([]); setMergeReplyMessage(''); }}
+        title="Review Team Merge Request"
+        size="md"
+        footer={
+          <div style={{ display: 'flex', gap: 'var(--space-sm)', justifyContent: 'flex-end', width: '100%' }}>
+            <Button
+              variant="outline"
+              onClick={() => handleMergeAction('rejected')}
+              loading={actionLoading}
+              icon={X}
+            >
+              Decline
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => handleMergeAction('accepted')}
+              loading={actionLoading}
+              icon={Check}
+              disabled={selectedMergeRequest && (selectedMergeRequest.sourceMemberCount + selectedMergeRequest.targetMemberCount) > selectedMergeRequest.maxTeamSize}
+            >
+              Accept Merge
+            </Button>
+          </div>
+        }
+      >
+        {selectedMergeRequest && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+            {/* Source team owner */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
+              <Link href={`/profile/${selectedMergeRequest.sourceTeam?.profiles?.id}`} title="View Profile">
+                <Avatar
+                  name={selectedMergeRequest.sourceTeam?.profiles?.full_name}
+                  src={selectedMergeRequest.sourceTeam?.profiles?.avatar_url}
+                  size="md"
+                />
+              </Link>
+              <div>
+                <p style={{ fontWeight: 'var(--font-semibold)', margin: 0 }}>
+                  <Link href={`/profile/${selectedMergeRequest.sourceTeam?.profiles?.id}`} style={{ color: 'var(--color-text)', textDecoration: 'none' }}>
+                    {selectedMergeRequest.sourceTeam?.profiles?.full_name}&apos;s Team
+                  </Link>
+                </p>
+                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', margin: 0 }}>
+                  wants to merge into your team for <strong>{selectedMergeRequest.projectTitle}</strong>
+                </p>
+              </div>
+            </div>
+
+            {/* Capacity check */}
+            <div className={styles.mergeCapacityCard}>
+              <div className={styles.mergeCapacityRow}>
+                <span>Incoming members</span>
+                <Badge variant="primary" size="sm">{selectedMergeRequest.sourceMemberCount}</Badge>
+              </div>
+              <div className={styles.mergeCapacityRow}>
+                <span>Your current team</span>
+                <Badge variant="primary" size="sm">{selectedMergeRequest.targetMemberCount}</Badge>
+              </div>
+              <div className={`${styles.mergeCapacityRow} ${styles.mergeCapacityTotal}`}>
+                <span>Combined total</span>
+                <Badge
+                  variant={(selectedMergeRequest.sourceMemberCount + selectedMergeRequest.targetMemberCount) <= selectedMergeRequest.maxTeamSize ? 'success' : 'error'}
+                  size="sm"
+                >
+                  {selectedMergeRequest.sourceMemberCount + selectedMergeRequest.targetMemberCount} / {selectedMergeRequest.maxTeamSize}
+                </Badge>
+              </div>
+            </div>
+
+            {(selectedMergeRequest.sourceMemberCount + selectedMergeRequest.targetMemberCount) > selectedMergeRequest.maxTeamSize && (
+              <div className={styles.mergeWarning}>
+                <AlertTriangle size={16} />
+                <span>Combined team size exceeds the project limit. This merge cannot be accepted.</span>
+              </div>
+            )}
+
+            {/* Source team member list */}
+            {mergeMembers.length > 0 && (
+              <div>
+                <p style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-semibold)', marginBottom: 'var(--space-sm)' }}>
+                  Members that will join your team:
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xs)' }}>
+                  {mergeMembers.map((m) => (
+                    <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', padding: 'var(--space-xs) var(--space-sm)', backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-sm)' }}>
+                      <Avatar name={m.profiles?.full_name} src={m.profiles?.avatar_url} size="sm" />
+                      <div>
+                        <p style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-medium)', margin: 0 }}>
+                          {m.profiles?.full_name}
+                          {m.role === 'owner' && (
+                            <Badge variant="accent" size="sm" style={{ marginLeft: 'var(--space-xs)' }}>Current Owner</Badge>
+                          )}
+                        </p>
+                        {m.profiles?.levels?.name && (
+                          <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', margin: 0 }}>{m.profiles.levels.name}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Message from requester */}
+            <div style={{ padding: 'var(--space-sm)', backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-md)' }}>
+              <p style={{ fontSize: 'var(--text-sm)', margin: '0 0 var(--space-xs) 0', color: 'var(--color-text-muted)' }}>
+                Message from {selectedMergeRequest.sourceTeam?.profiles?.full_name?.split(' ')[0]}:
+              </p>
+              <p style={{ margin: 0, fontStyle: selectedMergeRequest.message ? 'normal' : 'italic', color: selectedMergeRequest.message ? 'var(--color-text)' : 'var(--color-text-muted)' }}>
+                {selectedMergeRequest.message ? `"${selectedMergeRequest.message}"` : 'No message provided.'}
+              </p>
+            </div>
+
+            <Input
+              id="merge-reply-message"
+              label="Reply Message (Optional)"
+              value={mergeReplyMessage}
+              onChange={(e) => setMergeReplyMessage(e.target.value)}
+              placeholder="e.g. Welcome aboard! We're excited to have your team join us."
             />
           </div>
         )}
