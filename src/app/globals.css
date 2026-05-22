@@ -88,11 +88,44 @@
   --transition-base: 250ms ease;
   --transition-slow: 400ms ease;
 
+  /* --- Z-Index --- */
+  --z-dropdown: 40;
+  --z-navbar: 50;
+  --z-modal-overlay: 1000;
+  --z-modal: 1010;
+  --z-toast: 9999;
+
   /* --- Max Widths --- */
   --max-w-sm: 640px;
   --max-w-md: 768px;
   --max-w-lg: 1024px;
   --max-w-xl: 1280px;
+
+  /* --- Aliases (bridge component CSS to design tokens) --- */
+  --spacing-xs: var(--space-xs);
+  --spacing-sm: var(--space-sm);
+  --spacing-md: var(--space-md);
+  --spacing-lg: var(--space-lg);
+  --spacing-xl: var(--space-xl);
+  --spacing-2xl: var(--space-2xl);
+  --spacing-3xl: var(--space-3xl);
+
+  --font-size-xs: var(--text-xs);
+  --font-size-sm: var(--text-sm);
+  --font-size-md: var(--text-base);
+  --font-size-base: var(--text-base);
+  --font-size-lg: var(--text-lg);
+  --font-size-xl: var(--text-xl);
+  --font-size-2xl: var(--text-2xl);
+
+  --font-weight-normal: var(--font-normal);
+  --font-weight-medium: var(--font-medium);
+  --font-weight-semibold: var(--font-semibold);
+  --font-weight-bold: var(--font-bold);
+
+  --line-height-tight: var(--leading-tight);
+  --line-height-normal: var(--leading-normal);
+  --line-height-relaxed: var(--leading-relaxed);
 }
 
 /* =============================================================
