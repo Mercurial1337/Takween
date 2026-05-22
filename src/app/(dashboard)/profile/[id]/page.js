@@ -5,11 +5,12 @@ export async function generateMetadata({ params }) {
   const { id } = await params;
   const supabase = await createClient();
   
-  const { data: profile } = await supabase
+  const { data: profileRows } = await supabase
     .from('profiles')
     .select('full_name')
-    .eq('id', id)
-    .single();
+    .eq('id', id);
+
+  const profile = profileRows?.[0] || null;
 
   if (!profile) {
     return {
