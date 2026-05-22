@@ -1,7 +1,16 @@
 import { NextResponse } from 'next/server';
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: Number(process.env.SMTP_PORT) === 465, // true for 465, false for other ports
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 export async function POST(request) {
@@ -13,8 +22,8 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Recipient email is required' }, { status: 400 });
     }
 
-    if (!process.env.RESEND_API_KEY) {
-      console.warn('RESEND_API_KEY is not set. Email would have been:', body);
+    if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
+      console.warn('SMTP credentials are not set. Email would have been:', body);
       return NextResponse.json({ success: true, simulated: true });
     }
 
@@ -215,19 +224,14 @@ export async function POST(request) {
 
     htmlContent = baseHtml(innerContent);
 
-    const { data, error } = await resend.emails.send({
-      from: 'Takween <onboarding@resend.dev>',
+    const info = await transporter.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
       to: recipientEmail,
       subject: subject,
       html: htmlContent,
     });
 
-    if (error) {
-      console.error('Resend API error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({ success: true, messageId: info.messageId });
   } catch (error) {
     console.error('Email API route error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
