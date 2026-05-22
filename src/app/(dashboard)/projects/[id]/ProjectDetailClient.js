@@ -173,7 +173,7 @@ export default function ProjectDetailClient({ id }) {
             if (ownedTeamIds.length > 0) {
               const { data: reqData } = await supabase
                 .from('join_requests')
-                .select('*, profiles:user_id (id, full_name, avatar_url)')
+                .select('*, profiles:user_id (id, full_name, avatar_url, email)')
                 .in('team_id', ownedTeamIds)
                 .eq('status', 'pending');
               if (reqData) setAllRequests(reqData);
@@ -269,7 +269,7 @@ export default function ProjectDetailClient({ id }) {
       });
       if (error) throw error;
 
-      // Notify team owner
+      // Notify team owner via DB notification
       await supabase.from('notifications').insert({
         user_id: selectedTeam.owner_id,
         type: 'request_received',
@@ -277,6 +277,24 @@ export default function ProjectDetailClient({ id }) {
         body: `${profile?.full_name} wants to join your team for ${project.title}.`,
         metadata: { team_id: selectedTeam.id, user_id: user.id },
       });
+
+      // Send email to team owner via API
+      try {
+        await fetch('/api/email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'request_received',
+            recipientEmail: selectedTeam.profiles?.email,
+            recipientName: selectedTeam.profiles?.full_name,
+            actorName: profile?.full_name,
+            projectName: project.title,
+            message: joinMessage || null
+          })
+        });
+      } catch (emailErr) {
+        console.error('Failed to send email:', emailErr);
+      }
 
       showToast({ title: 'Request sent', message: 'The team owner will review your request.', variant: 'success' });
       setShowJoinModal(false);
@@ -304,7 +322,7 @@ export default function ProjectDetailClient({ id }) {
         });
       }
 
-      // Notify the requester
+      // Notify the requester via DB
       await supabase.from('notifications').insert({
         user_id: requestUserId,
         type: action === 'accepted' ? 'request_accepted' : 'request_rejected',
@@ -314,6 +332,27 @@ export default function ProjectDetailClient({ id }) {
           : `Your request to join the team for ${project.title} was declined.`,
         metadata: { team_id: selectedTeam.id },
       });
+
+      // Send email to requester via API
+      try {
+        const reqObj = allRequests.find(r => r.id === requestId);
+        if (reqObj && reqObj.profiles?.email) {
+          await fetch('/api/email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: action === 'accepted' ? 'request_accepted' : 'request_rejected',
+              recipientEmail: reqObj.profiles.email,
+              recipientName: reqObj.profiles.full_name,
+              actorName: profile?.full_name,
+              projectName: project.title,
+              message: null // ProjectDetailClient currently has no reply message UI
+            })
+          });
+        }
+      } catch (emailErr) {
+        console.error('Failed to send email:', emailErr);
+      }
 
       showToast({
         title: action === 'accepted' ? 'Member added' : 'Request rejected',

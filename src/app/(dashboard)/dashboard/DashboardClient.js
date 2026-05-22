@@ -91,7 +91,7 @@ export default function DashboardClient() {
             message,
             status,
             created_at,
-            profiles:user_id (id, full_name, avatar_url, levels:level_id (name)),
+            profiles:user_id (id, full_name, email, avatar_url, levels:level_id (name)),
             teams:team_id (
               id,
               projects (id, title)
@@ -156,6 +156,26 @@ export default function DashboardClient() {
         body: bodyText,
         metadata: { team_id: selectedRequest.team_id },
       });
+
+      // Send email to requester via API
+      try {
+        if (selectedRequest.profiles?.email) {
+          await fetch('/api/email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: action === 'accepted' ? 'request_accepted' : 'request_rejected',
+              recipientEmail: selectedRequest.profiles.email,
+              recipientName: selectedRequest.profiles.full_name,
+              actorName: profile?.full_name,
+              projectName: projectTitle,
+              message: replyMessage || null
+            })
+          });
+        }
+      } catch (emailErr) {
+        console.error('Failed to send email:', emailErr);
+      }
 
       showToast({
         title: action === 'accepted' ? 'Request accepted' : 'Request rejected',
