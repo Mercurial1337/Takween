@@ -41,7 +41,9 @@ export default function ProjectDetailClient({ id }) {
   // Modals
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [joinMessage, setJoinMessage] = useState('');
-  const [showManualModal, setShowManualModal] = useState(false);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [addMemberMode, setAddMemberMode] = useState('registered'); // 'registered' or 'manual'
+  const [addMemberEmail, setAddMemberEmail] = useState('');
   const [manualName, setManualName] = useState('');
   const [manualWhatsapp, setManualWhatsapp] = useState('');
 
@@ -325,24 +327,71 @@ export default function ProjectDetailClient({ id }) {
     }
   };
 
-  // Add manual member
-  const handleAddManual = async () => {
+  // Add member (handles both registered by email and manual)
+  const handleAddMember = async () => {
     setActionLoading(true);
     try {
-      const { error } = await supabase.from('manual_members').insert({
-        team_id: selectedTeam.id,
-        full_name: manualName,
-        whatsapp_number: manualWhatsapp || null,
-        added_by: user.id,
-      });
-      if (error) throw error;
-      showToast({ title: 'Member added', variant: 'success' });
-      setShowManualModal(false);
+      if (addMemberMode === 'registered') {
+        // 1. Find user by email
+        const { data: userProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .eq('email', addMemberEmail.trim())
+          .maybeSingle();
+
+        if (profileError) throw profileError;
+        if (!userProfile) {
+          throw new Error('No registered user found with this email address. They must sign up first, or you can add them manually.');
+        }
+
+        // 2. Add to team members
+        const { error: insertError } = await supabase.from('team_members').insert({
+          team_id: selectedTeam.id,
+          user_id: userProfile.id,
+          role: 'member',
+        });
+
+        if (insertError) {
+          // Improve error message if it's a known constraint
+          if (insertError.message.includes('already a member')) {
+            throw new Error('This user is already a member of a team in this project.');
+          }
+          if (insertError.message.includes('department')) {
+            throw new Error('This user is in a different department and cannot join this team.');
+          }
+          throw insertError;
+        }
+
+        // 3. Notify the added user
+        await supabase.from('notifications').insert({
+          user_id: userProfile.id,
+          type: 'request_accepted', // reusing this type for being added
+          title: 'Added to team',
+          body: `You have been added to a team for ${project.title} by ${profile?.full_name}.`,
+          metadata: { team_id: selectedTeam.id },
+        });
+
+        showToast({ title: 'Member added', message: `${userProfile.full_name} has been added to the team.`, variant: 'success' });
+      } else {
+        // Manual member
+        const { error } = await supabase.from('manual_members').insert({
+          team_id: selectedTeam.id,
+          full_name: manualName,
+          whatsapp_number: manualWhatsapp || null,
+          added_by: user.id,
+        });
+        if (error) throw error;
+        showToast({ title: 'Manual member added', variant: 'success' });
+      }
+
+      // Reset and close
+      setShowAddMemberModal(false);
+      setAddMemberEmail('');
       setManualName('');
       setManualWhatsapp('');
       await fetchProject();
     } catch (err) {
-      showToast({ title: 'Error', message: err.message, variant: 'error' });
+      showToast({ title: 'Cannot add member', message: err.message, variant: 'error' });
     } finally {
       setActionLoading(false);
     }
@@ -655,7 +704,7 @@ export default function ProjectDetailClient({ id }) {
                         <Badge variant="warning">Request Pending</Badge>
                       )}
                       {isOwner && !isFull && (
-                        <Button onClick={() => setShowManualModal(true)} variant="secondary" icon={Plus} size="sm">
+                        <Button onClick={() => setShowAddMemberModal(true)} variant="secondary" icon={Plus} size="sm">
                           Add Member
                         </Button>
                       )}
@@ -851,39 +900,104 @@ export default function ProjectDetailClient({ id }) {
         />
       </Modal>
 
-      {/* Add Manual Member Modal */}
+      {/* Add Member Modal */}
       <Modal
-        isOpen={showManualModal}
-        onClose={() => setShowManualModal(false)}
+        isOpen={showAddMemberModal}
+        onClose={() => setShowAddMemberModal(false)}
         title="Add Team Member"
         footer={
           <div className={styles.modalFooter}>
-            <Button variant="ghost" onClick={() => setShowManualModal(false)}>Cancel</Button>
-            <Button onClick={handleAddManual} loading={actionLoading} disabled={!manualName.trim()}>
+            <Button variant="ghost" onClick={() => setShowAddMemberModal(false)}>Cancel</Button>
+            <Button 
+              onClick={handleAddMember} 
+              loading={actionLoading} 
+              disabled={
+                addMemberMode === 'registered' 
+                  ? !addMemberEmail.trim() 
+                  : !manualName.trim()
+              }
+            >
               Add Member
             </Button>
           </div>
         }
       >
-        <p className={styles.modalText}>
-          Add a member who doesn&apos;t have a Takween account.
-          They will count toward the team size limit.
-        </p>
-        <div className={styles.modalFields}>
-          <Input
-            id="manual-name"
-            label="Full Name"
-            value={manualName}
-            onChange={(e) => setManualName(e.target.value)}
-            required
-          />
-          <Input
-            id="manual-whatsapp"
-            label="WhatsApp Number (optional)"
-            value={manualWhatsapp}
-            onChange={(e) => setManualWhatsapp(e.target.value)}
-          />
+        <div className={styles.tabContainer} style={{ display: 'flex', gap: 'var(--space-sm)', marginBottom: 'var(--space-md)', padding: '4px', backgroundColor: 'var(--color-surface-hover)', borderRadius: 'var(--radius-md)' }}>
+          <button
+            type="button"
+            style={{
+              flex: 1,
+              padding: 'var(--space-sm) var(--space-md)',
+              borderRadius: 'var(--radius-sm)',
+              border: 'none',
+              backgroundColor: addMemberMode === 'registered' ? 'var(--color-surface)' : 'transparent',
+              color: addMemberMode === 'registered' ? 'var(--color-text)' : 'var(--color-text-muted)',
+              fontWeight: addMemberMode === 'registered' ? 'var(--font-medium)' : 'var(--font-normal)',
+              boxShadow: addMemberMode === 'registered' ? 'var(--shadow-sm)' : 'none',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+            onClick={() => setAddMemberMode('registered')}
+          >
+            Registered User
+          </button>
+          <button
+            type="button"
+            style={{
+              flex: 1,
+              padding: 'var(--space-sm) var(--space-md)',
+              borderRadius: 'var(--radius-sm)',
+              border: 'none',
+              backgroundColor: addMemberMode === 'manual' ? 'var(--color-surface)' : 'transparent',
+              color: addMemberMode === 'manual' ? 'var(--color-text)' : 'var(--color-text-muted)',
+              fontWeight: addMemberMode === 'manual' ? 'var(--font-medium)' : 'var(--font-normal)',
+              boxShadow: addMemberMode === 'manual' ? 'var(--shadow-sm)' : 'none',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+            onClick={() => setAddMemberMode('manual')}
+          >
+            Manual Entry
+          </button>
         </div>
+
+        {addMemberMode === 'registered' ? (
+          <div>
+            <p className={styles.modalText} style={{ marginBottom: 'var(--space-md)' }}>
+              Add a member who already has a Takween account using their email address. They will be added to the team immediately.
+            </p>
+            <Input
+              id="member-email"
+              label="User Email Address"
+              type="email"
+              value={addMemberEmail}
+              onChange={(e) => setAddMemberEmail(e.target.value)}
+              placeholder="student@example.com"
+              required
+            />
+          </div>
+        ) : (
+          <div>
+            <p className={styles.modalText} style={{ marginBottom: 'var(--space-md)' }}>
+              Add a member who doesn&apos;t have a Takween account. They will count toward the team size limit.
+            </p>
+            <div className={styles.modalFields}>
+              <Input
+                id="manual-name"
+                label="Full Name"
+                value={manualName}
+                onChange={(e) => setManualName(e.target.value)}
+                required
+              />
+              <Input
+                id="manual-whatsapp"
+                label="WhatsApp Number (optional)"
+                value={manualWhatsapp}
+                onChange={(e) => setManualWhatsapp(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
