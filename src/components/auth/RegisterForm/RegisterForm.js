@@ -40,6 +40,10 @@ export default function RegisterForm() {
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
+    let retryCount = 0;
+    let retryTimer = null;
+    let isMounted = true;
+
     const fetchData = async () => {
       try {
         const [levelsRes, deptsRes, skillsRes] = await Promise.all([
@@ -48,30 +52,63 @@ export default function RegisterForm() {
           supabase.from('skills').select('*').order('name'),
         ]);
 
+        if (!isMounted) return;
+
+        let hasFailure = false;
+
         if (levelsRes.error) {
           console.error('Error fetching levels:', levelsRes.error);
-          showToast({ title: 'Error', message: 'Failed to load academic levels. Check console.', variant: 'error' });
+          hasFailure = true;
         } else if (levelsRes.data) {
           setLevels(levelsRes.data);
-          if (levelsRes.data.length === 0) console.warn('Levels data is empty. Seed data might be missing or env variables not set.');
+          if (levelsRes.data.length === 0) {
+            console.warn('Levels data is empty. Seed data might be missing or env variables not set.');
+            hasFailure = true;
+          }
         }
 
         if (deptsRes.error) {
           console.error('Error fetching departments:', deptsRes.error);
+          hasFailure = true;
         } else if (deptsRes.data) {
           setDepartments(deptsRes.data);
         }
 
         if (skillsRes.error) {
           console.error('Error fetching skills:', skillsRes.error);
+          hasFailure = true;
         } else if (skillsRes.data) {
           setSkillSuggestions(skillsRes.data);
         }
+
+        // Retry on failure with exponential backoff (max 3 retries)
+        if (hasFailure && retryCount < 3) {
+          retryCount++;
+          const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 4000);
+          console.warn(`Retrying reference data fetch (attempt ${retryCount}/3) in ${delay}ms...`);
+          retryTimer = setTimeout(() => {
+            if (isMounted) fetchData();
+          }, delay);
+        } else if (hasFailure && retryCount >= 3) {
+          showToast({ title: 'Connection Error', message: 'Failed to load form data. Please refresh the page.', variant: 'error' });
+        }
       } catch (err) {
         console.error('Unexpected error fetching reference data:', err);
+        if (isMounted && retryCount < 3) {
+          retryCount++;
+          const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 4000);
+          retryTimer = setTimeout(() => {
+            if (isMounted) fetchData();
+          }, delay);
+        }
       }
     };
     fetchData();
+
+    return () => {
+      isMounted = false;
+      if (retryTimer) clearTimeout(retryTimer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -116,11 +153,13 @@ export default function RegisterForm() {
     
     const fieldErrors = {};
     if (!result.success) {
-      const issues = result.error?.issues || result.error?.errors || [];
-      issues.forEach((err) => {
-        const field = err.path[0];
-        if (field && !fieldErrors[field]) fieldErrors[field] = err.message;
-      });
+      // Use Zod v4 .issues array — take only the first error per field
+      for (const issue of result.error.issues) {
+        const field = issue.path?.[0];
+        if (field && !fieldErrors[field]) {
+          fieldErrors[field] = issue.message;
+        }
+      }
     }
 
     // Conditionally require department only if academic level requires it

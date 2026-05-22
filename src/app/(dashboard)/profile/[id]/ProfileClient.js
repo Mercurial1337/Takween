@@ -30,13 +30,13 @@ export default function ProfileClient({ id }) {
     const fetchProfileData = async () => {
       try {
         // Fetch profile and level name
-        const { data: profileData, error: profileErr } = await supabase
+        const { data: profileRows, error: profileErr } = await supabase
           .from('profiles')
           .select('*, levels:level_id (name)')
-          .eq('id', id)
-          .single();
+          .eq('id', id);
 
         if (profileErr) throw profileErr;
+        const profileData = profileRows?.[0] || null;
         setProfile(profileData);
 
         // Fetch user's skills

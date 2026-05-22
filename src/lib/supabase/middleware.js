@@ -70,11 +70,12 @@ export async function updateSession(request) {
 
   // For admin routes, check if user has admin role
   if (user && adminPaths.some(path => pathname.startsWith(path))) {
-    const { data: profile } = await supabase
+    const { data: profileRows } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single()
+
+    const profile = profileRows?.[0] || null;
 
     if (!profile || profile.role !== 'admin') {
       const url = request.nextUrl.clone()
