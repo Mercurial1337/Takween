@@ -7,7 +7,7 @@ const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { type, recipientEmail, recipientName, actorName, projectName, message } = body;
+    const { type, recipientEmail, recipientName, actorName, projectName, message, teamName, sourceMemberCount } = body;
 
     if (!recipientEmail) {
       return NextResponse.json({ error: 'Recipient email is required' }, { status: 400 });
@@ -174,8 +174,43 @@ export async function POST(request) {
           <p>Don't worry! There are plenty of other teams looking for members. Check out the projects page to find another great fit.</p>
         `;
         break;
+      case 'merge_received':
+        subject = `Team Merge Request for ${projectName}`;
+        innerContent = `
+          <h2>Team Merge Request</h2>
+          <p>Hello ${recipientName},</p>
+          <p><strong>${actorName}</strong>'s team${teamName ? ` (${teamName})` : ''} has requested to merge into your team for the project <strong>${projectName}</strong>.</p>
+          ${sourceMemberCount ? `<p>This would add <strong>${sourceMemberCount} member${sourceMemberCount > 1 ? 's' : ''}</strong> to your team.</p>` : ''}
+          ${message ? `<div class="message-box"><p>"${message}"</p></div>` : ''}
+          <p>Please log in to your dashboard to review this merge request.</p>
+        `;
+        break;
+      case 'merge_accepted':
+        subject = `Team Merge Accepted: ${projectName}`;
+        innerContent = `
+          <h2>Merge Accepted! 🤝</h2>
+          <p>Hello ${recipientName},</p>
+          <p>Great news! Your team merge request for <strong>${projectName}</strong> has been accepted by <strong>${actorName}</strong>.</p>
+          ${message ? `<div class="message-box"><p>Message: "${message}"</p></div>` : ''}
+          <p>Your team members have been transferred. Log in to see your updated team.</p>
+        `;
+        break;
+      case 'merge_rejected':
+        subject = `Team Merge Update: ${projectName}`;
+        innerContent = `
+          <h2>Merge Request Update</h2>
+          <p>Hello ${recipientName},</p>
+          <p>Your team merge request for <strong>${projectName}</strong> was declined by the target team owner.</p>
+          ${message ? `<div class="message-box"><p>Message: "${message}"</p></div>` : ''}
+          <p>Your team remains active. You can continue to recruit members or consider requesting a merge with another team.</p>
+        `;
+        break;
       default:
         return NextResponse.json({ error: 'Invalid notification type' }, { status: 400 });
+    }
+
+    if (!innerContent) {
+      return NextResponse.json({ error: 'Invalid notification type' }, { status: 400 });
     }
 
     htmlContent = baseHtml(innerContent);
