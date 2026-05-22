@@ -101,9 +101,22 @@ INSERT INTO skills (name, is_predefined) VALUES
   ('Raspberry Pi', true)
 ON CONFLICT (name) DO NOTHING;
 
+-- ---- PROJECTS (Universal / Pre-seeded) ----
+INSERT INTO projects (title, description, department_id, max_team_size, status)
+SELECT 
+  'Graduation Project', 
+  'The mandatory graduation project for all departments. Connect with teammates within your specific department (CS, IS, SC, or CSys) to form your team.', 
+  NULL, 
+  6, 
+  'open'
+WHERE NOT EXISTS (
+  SELECT 1 FROM projects WHERE title = 'Graduation Project'
+);
+
 -- ============================================================================
 -- NOTE: To create the first admin user:
 -- 1. Register a normal account through the app
 -- 2. Run this SQL in Supabase SQL editor:
 --    UPDATE profiles SET role = 'admin' WHERE email = 'your-admin@email.com';
 -- ============================================================================
+
