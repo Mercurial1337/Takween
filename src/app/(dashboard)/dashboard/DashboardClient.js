@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Users, FolderOpen, Bell, ArrowRight, Plus } from 'lucide-react';
+import { Users, FolderOpen, Bell, ArrowRight, Plus, Check, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import { createClient } from '@/lib/supabase/client';
 import PageHeader from '@/components/layout/PageHeader/PageHeader';
 import Card from '@/components/ui/Card/Card';
@@ -11,14 +12,21 @@ import Badge from '@/components/ui/Badge/Badge';
 import Button from '@/components/ui/Button/Button';
 import EmptyState from '@/components/ui/EmptyState/EmptyState';
 import Skeleton from '@/components/ui/Skeleton/Skeleton';
+import Modal from '@/components/ui/Modal/Modal';
+import Avatar from '@/components/ui/Avatar/Avatar';
+import Input from '@/components/ui/Input/Input';
 import styles from './page.module.css';
 
 export default function DashboardClient() {
   const { user, profile, loading: authLoading } = useAuth();
+  const { showToast } = useToast();
   const [teams, setTeams] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [replyMessage, setReplyMessage] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
@@ -78,13 +86,15 @@ export default function DashboardClient() {
           .from('join_requests')
           .select(`
             id,
+            user_id,
+            team_id,
             message,
             status,
             created_at,
-            profiles:user_id (full_name),
+            profiles:user_id (id, full_name, avatar_url, levels:level_id (name)),
             teams:team_id (
               id,
-              projects (title)
+              projects (id, title)
             )
           `)
           .eq('status', 'pending')
@@ -111,6 +121,56 @@ export default function DashboardClient() {
       fetchDashboardData();
     });
   }, [user, supabase]);
+
+  const handleRequestAction = async (action) => {
+    if (!selectedRequest) return;
+    setActionLoading(true);
+    try {
+      await supabase
+        .from('join_requests')
+        .update({ status: action })
+        .eq('id', selectedRequest.id);
+
+      if (action === 'accepted') {
+        await supabase.from('team_members').insert({
+          team_id: selectedRequest.team_id,
+          user_id: selectedRequest.user_id,
+          role: 'member',
+        });
+      }
+
+      // Notify the requester
+      const projectTitle = selectedRequest.teams?.projects?.title || 'a project';
+      let bodyText = action === 'accepted'
+        ? `You have been accepted to the team for ${projectTitle}.`
+        : `Your request to join the team for ${projectTitle} was declined.`;
+      
+      if (replyMessage) {
+        bodyText += `\nMessage from owner: "${replyMessage}"`;
+      }
+
+      await supabase.from('notifications').insert({
+        user_id: selectedRequest.user_id,
+        type: action === 'accepted' ? 'request_accepted' : 'request_rejected',
+        title: action === 'accepted' ? 'Request accepted' : 'Request rejected',
+        body: bodyText,
+        metadata: { team_id: selectedRequest.team_id },
+      });
+
+      showToast({
+        title: action === 'accepted' ? 'Request accepted' : 'Request rejected',
+        variant: action === 'accepted' ? 'success' : 'info',
+      });
+      
+      setPendingRequests(prev => prev.filter(req => req.id !== selectedRequest.id));
+      setSelectedRequest(null);
+      setReplyMessage('');
+    } catch (err) {
+      showToast({ title: 'Error', message: err.message, variant: 'error' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   if (authLoading || loading) {
     return (
@@ -218,18 +278,94 @@ export default function DashboardClient() {
             {pendingRequests.map((req) => (
               <Card key={req.id} className={styles.requestCard}>
                 <div>
-                  <p className={styles.requestName}>{req.profiles?.full_name}</p>
+                  <p className={styles.requestName}>
+                    <Link href={`/profile/${req.user_id}`} style={{ color: 'var(--color-primary)', textDecoration: 'none' }} title="View Profile">
+                      {req.profiles?.full_name}
+                    </Link>
+                  </p>
                   <p className={styles.requestProject}>wants to join {req.teams?.projects?.title}</p>
                   {req.message && <p className={styles.requestMessage}>&ldquo;{req.message}&rdquo;</p>}
                 </div>
-                <Link href={`/projects/${req.teams?.id}`} className={styles.requestLink}>
+                <button 
+                  className={styles.requestLink} 
+                  style={{ border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 'var(--space-xs)', color: 'var(--color-primary)', fontWeight: 'var(--font-medium)', padding: 'var(--space-xs)' }}
+                  onClick={() => { setSelectedRequest(req); setReplyMessage(''); }}
+                >
                   Review <ArrowRight size={14} />
-                </Link>
+                </button>
               </Card>
             ))}
           </div>
         </section>
       )}
+
+      {/* Review Request Modal */}
+      <Modal
+        isOpen={!!selectedRequest}
+        onClose={() => setSelectedRequest(null)}
+        title="Review Join Request"
+        footer={
+          <div style={{ display: 'flex', gap: 'var(--space-sm)', justifyContent: 'flex-end', width: '100%' }}>
+            <Button 
+              variant="outline" 
+              onClick={() => handleRequestAction('rejected')} 
+              loading={actionLoading}
+              icon={X}
+            >
+              Reject
+            </Button>
+            <Button 
+              variant="primary" 
+              onClick={() => handleRequestAction('accepted')} 
+              loading={actionLoading}
+              icon={Check}
+            >
+              Accept
+            </Button>
+          </div>
+        }
+      >
+        {selectedRequest && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
+              <Link href={`/profile/${selectedRequest.user_id}`} title="View Profile">
+                <Avatar 
+                  name={selectedRequest.profiles?.full_name} 
+                  src={selectedRequest.profiles?.avatar_url} 
+                  size="md" 
+                />
+              </Link>
+              <div>
+                <p style={{ fontWeight: 'var(--font-semibold)', margin: 0 }}>
+                  <Link href={`/profile/${selectedRequest.user_id}`} style={{ color: 'var(--color-text)', textDecoration: 'none' }} title="View Profile">
+                    {selectedRequest.profiles?.full_name}
+                  </Link>
+                </p>
+                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', margin: 0 }}>
+                  {selectedRequest.profiles?.levels?.name || 'Student'}
+                </p>
+              </div>
+            </div>
+            
+            <div style={{ padding: 'var(--space-sm)', backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-md)' }}>
+              <p style={{ fontSize: 'var(--text-sm)', margin: '0 0 var(--space-xs) 0', color: 'var(--color-text-muted)' }}>
+                Message from {selectedRequest.profiles?.full_name.split(' ')[0]}:
+              </p>
+              <p style={{ margin: 0, fontStyle: selectedRequest.message ? 'normal' : 'italic', color: selectedRequest.message ? 'var(--color-text)' : 'var(--color-text-muted)' }}>
+                {selectedRequest.message ? `"${selectedRequest.message}"` : "No message provided."}
+              </p>
+            </div>
+
+            <Input
+              id="reply-message"
+              label="Reply Message (Optional)"
+              value={replyMessage}
+              onChange={(e) => setReplyMessage(e.target.value)}
+              placeholder="e.g. Welcome to the team! I'll add you to our group."
+            />
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
