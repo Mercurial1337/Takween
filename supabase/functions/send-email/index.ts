@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import nodemailer from "npm:nodemailer@6";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,9 +16,12 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    const smtpHost = Deno.env.get("SMTP_HOST");
+    const smtpPort = Number(Deno.env.get("SMTP_PORT") || "587");
+    const smtpUser = Deno.env.get("SMTP_USER");
+    const smtpPass = Deno.env.get("SMTP_PASS");
+    const smtpFrom = Deno.env.get("SMTP_FROM") ?? smtpUser ?? "";
     const appUrl = Deno.env.get("APP_URL") ?? "http://localhost:3000";
-    const resendFrom = Deno.env.get("RESEND_FROM") ?? "Takween <onboarding@resend.dev>";
 
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       throw new Error("Missing Supabase URL or Service Role Key in environment variables.");
@@ -70,8 +74,8 @@ serve(async (req) => {
 
     console.log(`Sending email to ${profile.full_name} (${profile.email}) for notification type '${record.type}'...`);
 
-    if (!resendApiKey) {
-      console.warn("RESEND_API_KEY is not set. Simulating email sending for testing.");
+    if (!smtpHost || !smtpUser) {
+      console.warn("SMTP credentials are not set. Simulating email sending for testing.");
       return new Response(
         JSON.stringify({
           success: true,
@@ -195,29 +199,26 @@ serve(async (req) => {
 </html>
     `;
 
-    // Make the API call to Resend
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${resendApiKey}`,
+    // Send email via SMTP using nodemailer
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpPort === 465,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
       },
-      body: JSON.stringify({
-        from: resendFrom,
-        to: profile.email,
-        subject: record.title,
-        html: htmlEmail,
-      }),
     });
 
-    const resData = await res.json();
-    if (!res.ok) {
-      console.error("Resend API error response:", JSON.stringify(resData));
-      throw new Error(`Resend API failed: ${resData.message || res.statusText}`);
-    }
+    const info = await transporter.sendMail({
+      from: smtpFrom,
+      to: profile.email,
+      subject: record.title,
+      html: htmlEmail,
+    });
 
-    console.log("Email successfully sent via Resend:", JSON.stringify(resData));
-    return new Response(JSON.stringify({ success: true, resend: resData }), {
+    console.log("Email successfully sent via SMTP:", info.messageId);
+    return new Response(JSON.stringify({ success: true, messageId: info.messageId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
