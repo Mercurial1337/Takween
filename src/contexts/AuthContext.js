@@ -17,16 +17,65 @@ export function AuthProvider({ children }) {
   const loading = authLoading || profileLoading
   const router = useRouter()
 
-  const fetchProfile = async (userId) => {
-    const { data, error } = await supabase
+  const fetchProfile = async (currentUser) => {
+    if (!currentUser) return null;
+
+    const { data: fetchResult, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', userId)
-      .single()
+      .eq('id', currentUser.id)
 
     if (error) {
-      console.error('Error fetching profile:', error)
-      return null
+      console.error('Error fetching profile:', error.message || error)
+    }
+
+    const data = fetchResult && fetchResult.length > 0 ? fetchResult[0] : null;
+
+    if (!data && currentUser.user_metadata && currentUser.user_metadata.full_name) {
+      const meta = currentUser.user_metadata;
+      const newProfile = {
+        id: currentUser.id,
+        full_name: meta.full_name || currentUser.email?.split('@')[0] || 'Student',
+        email: currentUser.email,
+        whatsapp_number: meta.whatsapp_number || '',
+        level_id: meta.level_id || null,
+        department_id: meta.department_id || null,
+        linkedin_url: meta.linkedin_url || null,
+        github_url: meta.github_url || null,
+        role: 'student'
+      };
+
+      const { error: upsertError } = await supabase
+        .from('profiles')
+        .upsert(newProfile);
+
+      if (upsertError) {
+        console.error('Error auto-creating profile:', upsertError);
+      } else {
+        // Attempt to restore skills
+        if (meta.skills && Array.isArray(meta.skills) && meta.skills.length > 0) {
+          try {
+            const skillIds = [];
+            for (const skillName of meta.skills) {
+              let { data: existing } = await supabase.from('skills').select('id').eq('name', skillName).maybeSingle();
+              if (existing) {
+                skillIds.push(existing.id);
+              } else {
+                const { data: newSkill } = await supabase.from('skills').insert({ name: skillName, is_predefined: false }).select('id').maybeSingle();
+                if (newSkill) skillIds.push(newSkill.id);
+              }
+            }
+            if (skillIds.length > 0) {
+              await supabase.from('profile_skills').upsert(
+                skillIds.map((skillId) => ({ profile_id: currentUser.id, skill_id: skillId }))
+              );
+            }
+          } catch (skillErr) {
+            console.error('Error restoring skills:', skillErr);
+          }
+        }
+        return newProfile;
+      }
     }
 
     return data
@@ -34,7 +83,7 @@ export function AuthProvider({ children }) {
 
   const refreshProfile = async () => {
     if (!user) return
-    const profileData = await fetchProfile(user.id)
+    const profileData = await fetchProfile(user)
     setProfile(profileData)
   }
 
@@ -60,7 +109,7 @@ export function AuthProvider({ children }) {
     const loadProfile = async () => {
       setProfileLoading(true)
       try {
-        const profileData = await fetchProfile(user.id)
+        const profileData = await fetchProfile(user)
         if (isMounted) {
           setProfile(profileData)
         }
