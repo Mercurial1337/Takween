@@ -49,9 +49,9 @@ jobs:
       - name: Deploy Supabase Migrations
         if: env.SUPABASE_ACCESS_TOKEN != '' && env.SUPABASE_DB_PASSWORD != '' && env.SUPABASE_PROJECT_ID != ''
         run: |
-          supabase link --project-ref $SUPABASE_PROJECT_ID --password $SUPABASE_DB_PASSWORD
+          supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
           supabase db push
 
       - name: Deploy Supabase Edge Functions
         if: env.SUPABASE_ACCESS_TOKEN != '' && env.SUPABASE_PROJECT_ID != ''
-        run: supabase functions deploy --project-ref $SUPABASE_PROJECT_ID
+        run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID"
