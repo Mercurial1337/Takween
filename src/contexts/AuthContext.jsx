@@ -99,6 +99,7 @@ export function AuthProvider({ children }) {
     if (!supabase) return
 
     if (!user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setProfile(null)
       setProfileLoading(false)
       return
