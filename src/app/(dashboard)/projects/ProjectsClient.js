@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Search, Building2, Users } from 'lucide-react';
+import { Search, Building2, Users, UsersRound } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import PageHeader from '@/components/layout/PageHeader/PageHeader';
 import Card from '@/components/ui/Card/Card';
@@ -134,20 +134,16 @@ export default function ProjectsClient() {
       ) : (
         <div className={styles.grid}>
           {filteredProjects.map((project) => {
-            const team = project.teams?.[0];
-            const memberCount = team
-              ? (team.team_members?.[0]?.count || 0) + (team.manual_members?.[0]?.count || 0)
-              : 0;
-            const isFull = memberCount >= project.max_team_size;
+            const teamCount = project.teams?.length || 0;
 
             return (
               <Link key={project.id} href={`/projects/${project.id}`} className={styles.cardLink}>
                 <Card hoverable className={styles.projectCard}>
                   <div className={styles.cardTop}>
                     <h3 className={styles.projectTitle}>{project.title}</h3>
-                    {team ? (
-                      <Badge variant={isFull ? 'warning' : 'success'} size="sm">
-                        {isFull ? 'Full' : 'Open'}
+                    {teamCount > 0 ? (
+                      <Badge variant={teamCount >= project.max_team_size ? 'warning' : 'success'} size="sm">
+                        {teamCount >= project.max_team_size ? 'Full' : 'Open'}
                       </Badge>
                     ) : (
                       <Badge variant="primary" size="sm">No Team</Badge>
@@ -166,9 +162,13 @@ export default function ProjectsClient() {
                   </p>
 
                   <div className={styles.cardFooter}>
-                    <span className={styles.memberCount}>
-                      <Users size={14} />
-                      {memberCount} members ({project.min_team_size || 1}-{project.max_team_size} target)
+                    <span className={styles.teamCount}>
+                      <UsersRound size={14} />
+                      {teamCount} {teamCount === 1 ? 'team' : 'teams'}
+                    </span>
+                    <span className={styles.memberRange}>
+                      <Users size={13} />
+                      {project.min_team_size || 1}–{project.max_team_size} members
                     </span>
                   </div>
                 </Card>
