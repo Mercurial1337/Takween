@@ -10,9 +10,12 @@ import Card from '@/components/ui/Card/Card';
 import Badge from '@/components/ui/Badge/Badge';
 import Input from '@/components/ui/Input/Input';
 import Select from '@/components/ui/Select/Select';
+import Pagination from '@/components/ui/Pagination/Pagination';
 import EmptyState from '@/components/ui/EmptyState/EmptyState';
 import Skeleton from '@/components/ui/Skeleton/Skeleton';
 import styles from './page.module.css';
+
+const PAGE_SIZE = 9;
 
 export default function ProjectsClient() {
   const [projects, setProjects] = useState([]);
@@ -20,8 +23,16 @@ export default function ProjectsClient() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const supabase = useMemo(() => createClient(), []);
   const debouncedSearch = useDebounce(searchQuery, 350);
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, departmentFilter]);
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -37,7 +48,7 @@ export default function ProjectsClient() {
             team_members (count),
             manual_members (count)
           )
-        `)
+        `, { count: 'exact' })
         .eq('status', 'open');
 
       // Server-side full-text search using ilike
@@ -51,14 +62,22 @@ export default function ProjectsClient() {
         query = query.or(`department_id.eq.${departmentFilter},department_id.is.null`);
       }
 
-      const { data } = await query.order('created_at', { ascending: false });
+      // Pagination
+      const from = (page - 1) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
+      const { data, count } = await query
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
       if (data) setProjects(data);
+      if (count !== null) setTotalCount(count);
     } catch (err) {
       console.error('Error fetching projects:', err);
     } finally {
       setLoading(false);
     }
-  }, [supabase, debouncedSearch, departmentFilter]);
+  }, [supabase, debouncedSearch, departmentFilter, page]);
 
   // Fetch departments once
   useEffect(() => {
@@ -134,6 +153,7 @@ export default function ProjectsClient() {
           description={searchQuery || departmentFilter ? 'Try adjusting your filters.' : 'No projects are available right now. Check back later.'}
         />
       ) : (
+        <>
         <div className={styles.grid}>
           {projects.map((project) => {
             const teamCount = project.teams?.length || 0;
@@ -178,6 +198,12 @@ export default function ProjectsClient() {
             );
           })}
         </div>
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+        />
+        </>
       )}
     </div>
   );
