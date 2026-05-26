@@ -110,18 +110,61 @@
     min-width: 60px;
   }
 
+  .sidebarHeader {
+    justify-content: center;
+    padding: var(--space-md);
+  }
+
   .sidebarHeader .logo,
   .adminBadge,
   .sidebarFooter {
     display: none;
   }
 
+  .nav {
+    padding: var(--space-sm);
+    align-items: center;
+  }
+
   .navLink {
     justify-content: center;
     padding: var(--space-sm);
+    border-radius: var(--radius-md);
+    position: relative;
   }
 
   .navLink span {
+    display: none;
+  }
+
+  .navLink:hover::after {
+    content: attr(title);
+    position: absolute;
+    left: calc(100% + var(--space-sm));
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: var(--color-text);
+    color: var(--color-text-inverse);
+    padding: 4px var(--space-sm);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    white-space: nowrap;
+    z-index: 100;
+    pointer-events: none;
+  }
+
+  .content {
+    padding: var(--space-lg) var(--space-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar {
+    width: 48px;
+    min-width: 48px;
+  }
+
+  .sidebarHeader {
     display: none;
   }
 }

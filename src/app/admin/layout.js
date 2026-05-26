@@ -44,9 +44,10 @@ export default function AdminLayout({ children }) {
               key={link.href}
               href={link.href}
               className={`${styles.navLink} ${pathname === link.href ? styles.active : ''}`}
+              title={link.label}
             >
               <link.icon size={18} />
-              {link.label}
+              <span>{link.label}</span>
             </Link>
           ))}
         </nav>

@@ -303,21 +303,6 @@
   margin-bottom: var(--space-md);
 }
 
-@media (max-width: 640px) {
-  .header {
-    flex-direction: column;
-  }
-
-  .teamHeader {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .teamActions {
-    width: 100%;
-  }
-}
-
 .memberLink {
   transition: opacity var(--transition-fast);
 }
@@ -418,6 +403,67 @@
 @media (max-width: 968px) {
   .layoutGrid {
     grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  .leftPane {
+    max-height: none;
+  }
+
+  .teamCardsList {
+    max-height: 50vh;
+    padding-right: 0;
+  }
+
+  .teamDetailsCard {
+    padding: var(--space-md);
+  }
+
+  .noTeamSelectedCard {
+    min-height: 200px;
+    padding: var(--space-xl) var(--space-md);
+  }
+}
+
+@media (max-width: 640px) {
+  .header {
+    flex-direction: column;
+  }
+
+  .teamHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .teamActions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .memberCard {
+    padding: var(--space-sm) var(--space-md);
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+  }
+
+  .requestCard {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
+  }
+
+  .filterBar {
+    flex-direction: column;
+  }
+
+  .filterWrapper {
+    width: 100%;
+  }
+
+  .paneHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
   }
 }
 
