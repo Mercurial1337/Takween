@@ -61,6 +61,13 @@ export async function updateSession(request) {
     return NextResponse.redirect(url)
   }
 
+  // If authenticated user visits the landing page, redirect to dashboard
+  if (user && pathname === '/') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
+    return NextResponse.redirect(url)
+  }
+
   // If user is authenticated and tries to access auth pages, redirect to dashboard
   if (user && authPaths.some(path => pathname.startsWith(path))) {
     const url = request.nextUrl.clone()
