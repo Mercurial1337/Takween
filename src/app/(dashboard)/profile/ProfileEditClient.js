@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { User, Mail, Phone, Globe, Code2, Save } from 'lucide-react';
 import { Linkedin, Github } from '@/components/ui/Icons/Icons';
 import { createClient } from '@/lib/supabase/client';
@@ -19,6 +20,7 @@ import styles from './page.module.css';
 export default function ProfileEditClient() {
   const { user, profile, refreshProfile, loading: authLoading } = useAuth();
   const { showToast } = useToast();
+  const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
 
   const [formData, setFormData] = useState({
@@ -274,6 +276,13 @@ export default function ProfileEditClient() {
           </div>
 
           <div className={styles.actions}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => router.push('/update-password')}
+            >
+              Change Password
+            </Button>
             <Button onClick={handleSave} loading={saving} icon={Save}>
               Save Changes
             </Button>
