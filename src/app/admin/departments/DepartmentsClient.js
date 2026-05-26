@@ -3,7 +3,9 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { logAdminAction } from '@/lib/supabase/audit';
 import Button from '@/components/ui/Button/Button';
 import Card from '@/components/ui/Card/Card';
 import Input from '@/components/ui/Input/Input';
@@ -11,6 +13,7 @@ import Modal from '@/components/ui/Modal/Modal';
 import styles from '../projects/page.module.css';
 
 export default function DepartmentsClient() {
+  const { user } = useAuth();
   const { showToast } = useToast();
   const supabase = useMemo(() => createClient(), []);
   const [items, setItems] = useState([]);
@@ -40,9 +43,11 @@ export default function DepartmentsClient() {
       if (editing) {
         await supabase.from('departments').update({ name: name.trim() }).eq('id', editing.id);
         showToast({ title: 'Department updated', variant: 'success' });
+        if (user) logAdminAction({ adminId: user.id, action: 'update', entityType: 'department', entityId: editing.id, details: { name: name.trim(), previousName: editing.name }, supabase });
       } else {
-        await supabase.from('departments').insert({ name: name.trim() });
+        const { data } = await supabase.from('departments').insert({ name: name.trim() }).select().single();
         showToast({ title: 'Department created', variant: 'success' });
+        if (data && user) logAdminAction({ adminId: user.id, action: 'create', entityType: 'department', entityId: data.id, details: { name: name.trim() }, supabase });
       }
       setShowModal(false);
       fetchData();
@@ -53,7 +58,9 @@ export default function DepartmentsClient() {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this department?')) return;
+    const item = items.find((i) => i.id === id);
     await supabase.from('departments').delete().eq('id', id);
+    if (user) logAdminAction({ adminId: user.id, action: 'delete', entityType: 'department', entityId: id, details: { name: item?.name }, supabase });
     showToast({ title: 'Department deleted', variant: 'success' });
     fetchData();
   };

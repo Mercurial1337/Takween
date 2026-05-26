@@ -1,0 +1,89 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-lg);
+}
+
+.title {
+  font-size: var(--text-xl);
+  font-weight: var(--font-bold);
+  color: var(--color-text);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.logCard {
+  padding: var(--space-md) var(--space-lg);
+}
+
+.logMain {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.logAction {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.logEntity {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+  text-transform: capitalize;
+}
+
+.logMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.logAdmin,
+.logTime {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.logDetails {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-top: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.detailChip {
+  display: inline-flex;
+  padding: 2px var(--space-sm);
+  background-color: var(--color-surface);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.detailChip strong {
+  color: var(--color-text);
+  margin-right: 4px;
+}
+
+@media (max-width: 640px) {
+  .logMain {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
+  }
+}

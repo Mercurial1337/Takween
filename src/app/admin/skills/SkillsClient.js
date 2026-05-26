@@ -3,7 +3,9 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { logAdminAction } from '@/lib/supabase/audit';
 import Button from '@/components/ui/Button/Button';
 import Card from '@/components/ui/Card/Card';
 import Input from '@/components/ui/Input/Input';
@@ -12,6 +14,7 @@ import Badge from '@/components/ui/Badge/Badge';
 import styles from '../projects/page.module.css';
 
 export default function SkillsClient() {
+  const { user } = useAuth();
   const { showToast } = useToast();
   const supabase = useMemo(() => createClient(), []);
   const [items, setItems] = useState([]);
@@ -36,8 +39,11 @@ export default function SkillsClient() {
     if (!name.trim()) return;
     setSaving(true);
     try {
-      await supabase.from('skills').insert({ name: name.trim(), is_predefined: true });
+      const { data } = await supabase.from('skills').insert({ name: name.trim(), is_predefined: true }).select().single();
       showToast({ title: 'Skill added', variant: 'success' });
+      if (data && user) {
+        logAdminAction({ adminId: user.id, action: 'create', entityType: 'skill', entityId: data.id, details: { name: name.trim() }, supabase });
+      }
       setShowModal(false);
       setName('');
       fetchData();
@@ -48,7 +54,11 @@ export default function SkillsClient() {
 
   const handleDelete = async (id) => {
     if (!confirm('Delete this skill?')) return;
+    const item = items.find((i) => i.id === id);
     await supabase.from('skills').delete().eq('id', id);
+    if (user) {
+      logAdminAction({ adminId: user.id, action: 'delete', entityType: 'skill', entityId: id, details: { name: item?.name }, supabase });
+    }
     showToast({ title: 'Skill deleted', variant: 'success' });
     fetchData();
   };
