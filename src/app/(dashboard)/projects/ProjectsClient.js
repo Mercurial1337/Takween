@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { Search, Building2, Users, UsersRound } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { useDebounce } from '@/hooks/useDebounce';
 import PageHeader from '@/components/layout/PageHeader/PageHeader';
 import Card from '@/components/ui/Card/Card';
 import Badge from '@/components/ui/Badge/Badge';
@@ -20,58 +21,59 @@ export default function ProjectsClient() {
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
   const supabase = useMemo(() => createClient(), []);
+  const debouncedSearch = useDebounce(searchQuery, 350);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [projectsRes, deptsRes] = await Promise.all([
-          supabase
-            .from('projects')
-            .select(`
-              *,
-              departments (name),
-              teams (
-                id,
-                status,
-                owner_id,
-                team_members (count),
-                manual_members (count)
-              )
-            `)
-            .eq('status', 'open')
-            .order('created_at', { ascending: false }),
-          supabase.from('departments').select('*').order('name'),
-        ]);
+  const fetchProjects = useCallback(async () => {
+    try {
+      let query = supabase
+        .from('projects')
+        .select(`
+          *,
+          departments (name),
+          teams (
+            id,
+            status,
+            owner_id,
+            team_members (count),
+            manual_members (count)
+          )
+        `)
+        .eq('status', 'open');
 
-        if (projectsRes.data) setProjects(projectsRes.data);
-        if (deptsRes.data) setDepartments(deptsRes.data);
-      } catch (err) {
-        console.error('Error fetching projects:', err);
-      } finally {
-        setLoading(false);
+      // Server-side full-text search using ilike
+      if (debouncedSearch) {
+        const q = `%${debouncedSearch}%`;
+        query = query.or(`title.ilike.${q},description.ilike.${q}`);
       }
+
+      // Server-side department filter
+      if (departmentFilter) {
+        query = query.or(`department_id.eq.${departmentFilter},department_id.is.null`);
+      }
+
+      const { data } = await query.order('created_at', { ascending: false });
+      if (data) setProjects(data);
+    } catch (err) {
+      console.error('Error fetching projects:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase, debouncedSearch, departmentFilter]);
+
+  // Fetch departments once
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      const { data } = await supabase.from('departments').select('*').order('name');
+      if (data) setDepartments(data);
     };
-    fetchData();
+    fetchDepartments();
   }, [supabase]);
 
-  const filteredProjects = useMemo(() => {
-    let result = projects;
-
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(
-         (p) =>
-           p.title.toLowerCase().includes(q) ||
-           p.description.toLowerCase().includes(q)
-       );
-    }
-
-    if (departmentFilter) {
-      result = result.filter((p) => p.department_id === departmentFilter || p.department_id === null);
-    }
-
-    return result;
-  }, [projects, searchQuery, departmentFilter]);
+  // Re-fetch projects whenever search or filter changes
+  useEffect(() => {
+    setLoading(true);
+    fetchProjects();
+  }, [fetchProjects]);
 
   if (loading) {
     return (
@@ -125,7 +127,7 @@ export default function ProjectsClient() {
       </div>
 
       {/* Results */}
-      {filteredProjects.length === 0 ? (
+      {projects.length === 0 ? (
         <EmptyState
           icon={Search}
           title="No projects found"
@@ -133,7 +135,7 @@ export default function ProjectsClient() {
         />
       ) : (
         <div className={styles.grid}>
-          {filteredProjects.map((project) => {
+          {projects.map((project) => {
             const teamCount = project.teams?.length || 0;
 
             return (
