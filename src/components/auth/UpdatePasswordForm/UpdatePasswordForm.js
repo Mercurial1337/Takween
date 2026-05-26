@@ -1,33 +1,39 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Lock, Eye, EyeOff } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/contexts/ToastContext';
 import Input from '@/components/ui/Input/Input';
 import Button from '@/components/ui/Button/Button';
-import styles from './LoginForm.module.css';
+import styles from './UpdatePasswordForm.module.css';
 
-export default function LoginForm() {
-  const [email, setEmail] = useState('');
+export default function UpdatePasswordForm() {
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [submitStatus, setSubmitStatus] = useState({ type: null, message: '' });
+  
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { showToast } = useToast();
   const supabase = createClient();
 
   const validate = () => {
     const newErrors = {};
-    if (!email) newErrors.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Please enter a valid email';
-    if (!password) newErrors.password = 'Password is required';
-    else if (password.length < 6) newErrors.password = 'Password must be at least 6 characters';
+    if (!password) {
+      newErrors.password = 'Password is required';
+    } else if (password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    
+    if (password !== confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -35,38 +41,38 @@ export default function LoginForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) {
-      setSubmitStatus({ type: 'error', message: 'Please correct the errors in the form.' });
       return;
     }
 
     setLoading(true);
     setSubmitStatus({ type: null, message: '' });
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: password
       });
 
-      if (error) {
+      if (updateError) {
         showToast({
-          title: 'Sign in failed',
-          message: error.message,
+          title: 'Error',
+          message: updateError.message,
           variant: 'error',
         });
-        setSubmitStatus({ type: 'error', message: error.message });
+        setSubmitStatus({ type: 'error', message: updateError.message });
         return;
       }
 
       showToast({
-        title: 'Welcome back',
-        message: 'You have been signed in successfully.',
+        title: 'Password Updated',
+        message: 'Your password has been successfully updated.',
         variant: 'success',
       });
-      setSubmitStatus({ type: 'success', message: 'Welcome back! Redirecting...' });
-
-      const redirect = searchParams.get('redirect') || '/dashboard';
-      router.push(redirect);
-      router.refresh();
+      setSubmitStatus({ type: 'success', message: 'Password updated successfully! Redirecting...' });
+      
+      setTimeout(() => {
+        router.push('/dashboard');
+        router.refresh();
+      }, 1500);
+      
     } catch (err) {
       showToast({
         title: 'Something went wrong',
@@ -101,26 +107,15 @@ export default function LoginForm() {
       )}
       <div className={styles.fields}>
         <Input
-          id="login-email"
-          label="Email"
-          type="email"
-          icon={Mail}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          error={errors.email}
-          required
-          autoComplete="email"
-        />
-        <Input
-          id="login-password"
-          label="Password"
+          id="update-password"
+          label="New Password"
           type={showPassword ? 'text' : 'password'}
           icon={Lock}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           error={errors.password}
           required
-          autoComplete="current-password"
+          autoComplete="new-password"
           rightElement={
             <button
               type="button"
@@ -132,11 +127,27 @@ export default function LoginForm() {
             </button>
           }
         />
-        <div className={styles.forgotPasswordWrapper}>
-          <Link href="/forgot-password" className={styles.forgotPassword}>
-            Forgot Password?
-          </Link>
-        </div>
+        <Input
+          id="confirm-password"
+          label="Confirm Password"
+          type={showConfirmPassword ? 'text' : 'password'}
+          icon={Lock}
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          error={errors.confirmPassword}
+          required
+          autoComplete="new-password"
+          rightElement={
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+              aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+            >
+              {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          }
+        />
       </div>
 
       <Button
@@ -146,7 +157,7 @@ export default function LoginForm() {
         loading={loading}
         size="lg"
       >
-        Sign In
+        Update Password
       </Button>
     </form>
   );
