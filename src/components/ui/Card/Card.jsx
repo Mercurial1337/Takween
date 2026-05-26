@@ -28,16 +28,23 @@ export default function Card({
     .filter(Boolean)
     .join(' ');
 
-  const Tag = onClick ? 'button' : 'div';
+  const handleKeyDown = onClick ? (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick(e);
+    }
+  } : undefined;
 
   return (
-    <Tag
+    <div
       className={classNames}
       onClick={onClick}
+      onKeyDown={handleKeyDown}
+      role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
       {...rest}
     >
       {children}
-    </Tag>
+    </div>
   );
 }
