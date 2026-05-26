@@ -175,7 +175,7 @@ export default function ProjectDetailClient({ id }) {
           // Get members
           const { data: memberData } = await supabase
             .from('team_members')
-            .select('*, profiles:user_id (id, full_name, avatar_url, level_id, levels:level_id (name), linkedin_url, github_url, whatsapp_number, email)')
+            .select('*, profiles:user_id (id, full_name, avatar_url, level_id, levels:level_id (name), linkedin_url, github_url, whatsapp_number, email, profile_skills (skill_id, skills (name)))')
             .in('team_id', teamIds)
             .order('joined_at');
           if (memberData) setAllMembers(memberData);
@@ -901,6 +901,15 @@ export default function ProjectDetailClient({ id }) {
                               </div>
                               {canViewFullDetails && memberProfile?.levels?.name && (
                                 <p className={styles.memberLevel}>{memberProfile.levels.name}</p>
+                              )}
+                              {canViewFullDetails && memberProfile?.profile_skills?.length > 0 && (
+                                <div className={styles.memberSkills}>
+                                  {memberProfile.profile_skills.map((ps) => (
+                                    <Badge key={ps.skill_id} variant="default" size="sm">
+                                      {ps.skills?.name}
+                                    </Badge>
+                                  ))}
+                                </div>
                               )}
                               {isMember && memberProfile?.whatsapp_number && (
                                 <div className={styles.memberContactInfo}>
