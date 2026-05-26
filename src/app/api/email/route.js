@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import { getRateLimiter, getClientIp } from '@/lib/rateLimit';
+
+const emailLimiter = getRateLimiter('email', { windowMs: 60_000, maxRequests: 5 });
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -15,6 +18,22 @@ const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 export async function POST(request) {
   try {
+    // Rate limit check
+    const ip = getClientIp(request);
+    const { success, remaining, resetIn } = emailLimiter.check(ip);
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.', retryAfterMs: resetIn },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil(resetIn / 1000)),
+            'X-RateLimit-Remaining': '0',
+          },
+        }
+      );
+    }
+
     const body = await request.json();
     const { type, recipientEmail, recipientName, actorName, projectName, message, teamName, sourceMemberCount } = body;
 

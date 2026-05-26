@@ -19,6 +19,9 @@ vi.mock('nodemailer', () => ({
 function createMockRequest(body) {
   return {
     json: vi.fn().mockResolvedValue(body),
+    headers: {
+      get: vi.fn().mockReturnValue(null),
+    },
   };
 }
 
