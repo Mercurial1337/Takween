@@ -1255,7 +1255,6 @@ export default function ProjectDetailClient({ id }) {
                             <div>
                               <div className={styles.memberNameRow}>
                                 <span className={styles.memberName}>{m.full_name}</span>
-                                <Badge variant="default" size="sm">Manual</Badge>
                               </div>
                               {m.notes && <p className={styles.memberLevel}>{m.notes}</p>}
                               {isMember && m.whatsapp_number && (
