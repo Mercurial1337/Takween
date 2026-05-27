@@ -120,6 +120,18 @@ export const joinRequestActionSchema = z.object({
 });
 
 // ============================================================================
+// TEAM INVITE SCHEMAS
+// ============================================================================
+
+export const teamInviteSchema = z.object({
+  message: z.string().max(500, 'Message cannot exceed 500 characters').optional().or(z.literal('')),
+});
+
+export const teamInviteActionSchema = z.object({
+  action: z.enum(['accepted', 'rejected']),
+});
+
+// ============================================================================
 // MERGE REQUEST SCHEMAS
 // ============================================================================
 

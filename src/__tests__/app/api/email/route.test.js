@@ -15,6 +15,14 @@ vi.mock('nodemailer', () => ({
   },
 }));
 
+// Mock rate limiter to always allow requests
+vi.mock('@/lib/rateLimit', () => ({
+  getRateLimiter: () => ({
+    check: () => ({ success: true, remaining: 99, resetIn: 0 }),
+  }),
+  getClientIp: () => '127.0.0.1',
+}));
+
 // Helper to create a mock Request object
 function createMockRequest(body) {
   return {
@@ -103,5 +111,81 @@ describe('POST /api/email', () => {
     );
     
     errSpy.mockRestore();
+  });
+
+  it('sends email for invite_received', async () => {
+    const req = createMockRequest({
+      type: 'invite_received',
+      recipientEmail: 'student@example.com',
+      recipientName: 'Student',
+      actorName: 'Team Owner',
+      projectName: 'Graduation Project',
+      message: 'We need your skills!',
+    });
+    const response = await POST(req);
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+
+    const sentArgs = mockSendMail.mock.calls[0][0];
+    expect(sentArgs.subject).toBe('Team Invitation: Graduation Project');
+    expect(sentArgs.html).toContain('You\'ve Been Invited!');
+    expect(sentArgs.html).toContain('Team Owner');
+    expect(sentArgs.html).toContain('Graduation Project');
+    expect(sentArgs.html).toContain('We need your skills!');
+    expect(NextResponse.json).toHaveBeenCalledWith({ success: true, messageId: 'test-message-id' });
+  });
+
+  it('sends email for invite_accepted', async () => {
+    const req = createMockRequest({
+      type: 'invite_accepted',
+      recipientEmail: 'owner@example.com',
+      recipientName: 'Team Owner',
+      actorName: 'Student',
+      projectName: 'Graduation Project',
+    });
+    const response = await POST(req);
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+
+    const sentArgs = mockSendMail.mock.calls[0][0];
+    expect(sentArgs.subject).toBe('Invitation Accepted: Graduation Project');
+    expect(sentArgs.html).toContain('Invitation Accepted!');
+    expect(sentArgs.html).toContain('Student');
+    expect(NextResponse.json).toHaveBeenCalledWith({ success: true, messageId: 'test-message-id' });
+  });
+
+  it('sends email for invite_rejected', async () => {
+    const req = createMockRequest({
+      type: 'invite_rejected',
+      recipientEmail: 'owner@example.com',
+      recipientName: 'Team Owner',
+      actorName: 'Student',
+      projectName: 'Graduation Project',
+    });
+    const response = await POST(req);
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+
+    const sentArgs = mockSendMail.mock.calls[0][0];
+    expect(sentArgs.subject).toBe('Invitation Update: Graduation Project');
+    expect(sentArgs.html).toContain('Invitation Update');
+    expect(sentArgs.html).toContain('declined your invitation');
+    expect(sentArgs.html).toContain('Student Directory');
+    expect(NextResponse.json).toHaveBeenCalledWith({ success: true, messageId: 'test-message-id' });
+  });
+
+  it('sends invite_received email without message content', async () => {
+    const req = createMockRequest({
+      type: 'invite_received',
+      recipientEmail: 'student@example.com',
+      recipientName: 'Student',
+      actorName: 'Team Owner',
+      projectName: 'Test Project',
+    });
+    const response = await POST(req);
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+
+    const sentArgs = mockSendMail.mock.calls[0][0];
+    // When no message is passed, the template should not render the quoted message
+    expect(sentArgs.html).not.toContain('"message-box"><p>');
+    expect(sentArgs.subject).toBe('Team Invitation: Test Project');
+    expect(NextResponse.json).toHaveBeenCalledWith({ success: true, messageId: 'test-message-id' });
   });
 });

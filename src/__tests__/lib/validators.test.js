@@ -9,6 +9,8 @@ import {
   manualMemberSchema,
   joinRequestSchema,
   joinRequestActionSchema,
+  teamInviteSchema,
+  teamInviteActionSchema,
   departmentSchema,
   levelSchema,
   skillSchema,
@@ -134,6 +136,8 @@ describe('profileUpdateSchema', () => {
     const result = profileUpdateSchema.safeParse({ linkedin_url: 'https://linkedin.com/in/test' });
     expect(result.success).toBe(true);
   });
+
+
 });
 
 // ============================================================================
@@ -341,5 +345,47 @@ describe('adminInviteSchema', () => {
 
   it('rejects invalid email', () => {
     expect(adminInviteSchema.safeParse({ email: 'not-email' }).success).toBe(false);
+  });
+});
+
+// ============================================================================
+// teamInviteSchema & teamInviteActionSchema
+// ============================================================================
+describe('teamInviteSchema', () => {
+  it('allows empty message', () => {
+    expect(teamInviteSchema.safeParse({}).success).toBe(true);
+    expect(teamInviteSchema.safeParse({ message: '' }).success).toBe(true);
+  });
+
+  it('allows valid message', () => {
+    expect(teamInviteSchema.safeParse({ message: 'We need you on our team!' }).success).toBe(true);
+  });
+
+  it('rejects message exceeding 500 characters', () => {
+    const result = teamInviteSchema.safeParse({ message: 'a'.repeat(501) });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts exactly 500 characters', () => {
+    const result = teamInviteSchema.safeParse({ message: 'a'.repeat(500) });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe('teamInviteActionSchema', () => {
+  it('accepts accepted', () => {
+    expect(teamInviteActionSchema.safeParse({ action: 'accepted' }).success).toBe(true);
+  });
+
+  it('accepts rejected', () => {
+    expect(teamInviteActionSchema.safeParse({ action: 'rejected' }).success).toBe(true);
+  });
+
+  it('rejects invalid action', () => {
+    expect(teamInviteActionSchema.safeParse({ action: 'pending' }).success).toBe(false);
+  });
+
+  it('rejects missing action', () => {
+    expect(teamInviteActionSchema.safeParse({}).success).toBe(false);
   });
 });
