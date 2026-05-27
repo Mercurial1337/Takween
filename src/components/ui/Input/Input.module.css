@@ -61,7 +61,7 @@
 }
 
 .hasLeftElement {
-  padding-left: 78px;
+  padding-left: 95px;
 }
 
 .hasRightElement {
@@ -94,7 +94,8 @@
   border-right: 1.5px solid var(--color-border);
   padding-right: 8px;
   height: 60%;
-  pointer-events: none;
+  pointer-events: auto;
+  z-index: 2;
 }
 
 .rightElementWrapper {

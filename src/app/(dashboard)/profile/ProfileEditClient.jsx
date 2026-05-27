@@ -239,10 +239,10 @@ export default function ProfileEditClient() {
               id="profile-whatsapp"
               label="WhatsApp Number"
               value={formData.whatsapp_number}
-              onChange={(e) => updateField('whatsapp_number', e.target.value.replace(/^0/, ''))}
+              onChange={(e) => updateField('whatsapp_number', e.target.value.replace(/\D/g, '').replace(/^0/, ''))}
               required
-              placeholder="1009426569"
-              helperText="E.g. for +20 1009426569, select EG +20 and type 1009426569. We automatically remove leading zeros."
+              placeholder="01000666777"
+              helperText="E.g, 01........"
               leftElement={
                 <select
                   value={countryCode}
