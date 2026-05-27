@@ -114,6 +114,7 @@ export default function StudentsClient() {
   }, [supabase, debouncedSearch, departmentFilter, levelFilter]);
 
   useEffect(() => {
+    // eslint-disable-next-line
     setLoading(true);
     fetchStudents();
   }, [fetchStudents]);

@@ -29,10 +29,7 @@ export default function ProjectsClient() {
   const debouncedSearch = useDebounce(searchQuery, 350);
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, departmentFilter]);
+  // Re-fetch handled by fetchProjects dependency array
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -90,6 +87,7 @@ export default function ProjectsClient() {
 
   // Re-fetch projects whenever search or filter changes
   useEffect(() => {
+    // eslint-disable-next-line
     setLoading(true);
     fetchProjects();
   }, [fetchProjects]);
@@ -123,7 +121,7 @@ export default function ProjectsClient() {
             icon={Search}
             placeholder="Search projects..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
           />
         </div>
         <div className={styles.filterWrapper}>
@@ -132,13 +130,13 @@ export default function ProjectsClient() {
             placeholder="All Departments"
             options={departments.map((d) => ({ value: d.id, label: d.name }))}
             value={departmentFilter}
-            onChange={(e) => setDepartmentFilter(e.target.value)}
+            onChange={(e) => { setDepartmentFilter(e.target.value); setPage(1); }}
           />
         </div>
         {(searchQuery || departmentFilter) && (
           <button
             className={styles.clearBtn}
-            onClick={() => { setSearchQuery(''); setDepartmentFilter(''); }}
+            onClick={() => { setSearchQuery(''); setDepartmentFilter(''); setPage(1); }}
           >
             Clear filters
           </button>
