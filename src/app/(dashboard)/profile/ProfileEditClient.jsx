@@ -7,6 +7,7 @@ import { Linkedin, Github } from '@/components/ui/Icons/Icons';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
+import { profileUpdateSchema } from '@/lib/validators';
 import PageHeader from '@/components/layout/PageHeader/PageHeader';
 import Card from '@/components/ui/Card/Card';
 import Input from '@/components/ui/Input/Input';
@@ -37,6 +38,7 @@ export default function ProfileEditClient() {
   const [skillSuggestions, setSkillSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (!profile) return;
@@ -86,10 +88,39 @@ export default function ProfileEditClient() {
 
   const updateField = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
   };
 
   const handleSave = async () => {
     setSaving(true);
+    setErrors({});
+
+    // Validate URL fields before saving
+    const urlErrors = {};
+    if (formData.linkedin_url) {
+      try {
+        const linkedinCheck = profileUpdateSchema.shape.linkedin_url;
+        linkedinCheck.parse(formData.linkedin_url);
+      } catch {
+        urlErrors.linkedin_url = 'Must be a valid LinkedIn URL (e.g. https://linkedin.com/in/...)';
+      }
+    }
+    if (formData.github_url) {
+      try {
+        const githubCheck = profileUpdateSchema.shape.github_url;
+        githubCheck.parse(formData.github_url);
+      } catch {
+        urlErrors.github_url = 'Must be a valid GitHub URL (e.g. https://github.com/...)';
+      }
+    }
+    if (Object.keys(urlErrors).length > 0) {
+      setErrors(urlErrors);
+      setSaving(false);
+      return;
+    }
+
     try {
       // Format WhatsApp number before validation & submission
       let rawPhone = formData.whatsapp_number.trim().replace(/[^\d+]/g, '');
@@ -264,6 +295,7 @@ export default function ProfileEditClient() {
               icon={Linkedin}
               value={formData.linkedin_url}
               onChange={(e) => updateField('linkedin_url', e.target.value)}
+              error={errors.linkedin_url}
               placeholder="https://linkedin.com/in/..."
             />
             <Input
@@ -272,6 +304,7 @@ export default function ProfileEditClient() {
               icon={Github}
               value={formData.github_url}
               onChange={(e) => updateField('github_url', e.target.value)}
+              error={errors.github_url}
               placeholder="https://github.com/..."
             />
           </div>

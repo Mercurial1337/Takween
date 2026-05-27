@@ -25,11 +25,19 @@ export const registerSchema = z.object({
   linkedin_url: z
     .string()
     .url('Please enter a valid URL')
+    .regex(
+      /^https?:\/\/(www\.)?linkedin\.com\//i,
+      'Must be a valid LinkedIn URL (e.g. https://linkedin.com/in/...)'
+    )
     .optional()
     .or(z.literal('')),
   github_url: z
     .string()
     .url('Please enter a valid URL')
+    .regex(
+      /^https?:\/\/(www\.)?github\.com\//i,
+      'Must be a valid GitHub URL (e.g. https://github.com/...)'
+    )
     .optional()
     .or(z.literal('')),
 }).refine((data) => data.password === data.confirm_password, {
@@ -51,8 +59,24 @@ export const profileUpdateSchema = z.object({
     .optional(),
   level_id: z.string().uuid().optional(),
   department_id: z.string().uuid().optional(),
-  linkedin_url: z.string().url().optional().or(z.literal('')),
-  github_url: z.string().url().optional().or(z.literal('')),
+  linkedin_url: z
+    .string()
+    .url()
+    .regex(
+      /^https?:\/\/(www\.)?linkedin\.com\//i,
+      'Must be a valid LinkedIn URL'
+    )
+    .optional()
+    .or(z.literal('')),
+  github_url: z
+    .string()
+    .url()
+    .regex(
+      /^https?:\/\/(www\.)?github\.com\//i,
+      'Must be a valid GitHub URL'
+    )
+    .optional()
+    .or(z.literal('')),
   skills: z.array(z.string()).optional(),
 });
 
