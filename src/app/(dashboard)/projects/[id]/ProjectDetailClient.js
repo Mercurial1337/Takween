@@ -774,7 +774,7 @@ export default function ProjectDetailClient({ id }) {
               </Button>
             ) : (
               <Button size="sm" onClick={() => setShowSeekerModal(true)} icon={Check}>
-                I'm looking for a team
+                I&apos;m looking for a team
               </Button>
             )}
           </div>
@@ -1169,7 +1169,7 @@ export default function ProjectDetailClient({ id }) {
                   {seeker.message && (
                     <div className={styles.seekerMessage}>
                       <MessageSquare size={14} />
-                      <p>"{seeker.message}"</p>
+                      <p>&quot;{seeker.message}&quot;</p>
                     </div>
                   )}
                   {seeker.profiles?.profile_skills?.length > 0 && (
@@ -1407,7 +1407,7 @@ export default function ProjectDetailClient({ id }) {
       >
         <div className={styles.modalContent}>
           <p className={styles.modalText} style={{ marginBottom: 'var(--space-md)' }}>
-            By marking yourself as available, you will appear in the "Available Students" tab for this project. Team owners will be able to see your profile and invite you to their team.
+            By marking yourself as available, you will appear in the &quot;Available Students&quot; tab for this project. Team owners will be able to see your profile and invite you to their team.
           </p>
           <Input
             id="seeker-message"
