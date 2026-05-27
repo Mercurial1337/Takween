@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Users, Building2, ArrowLeft, Plus, UserPlus, UserMinus,
-  Crown, Trash2, LogOut, MessageSquare, Check, X, HandHelping, AlertTriangle, Send
+  Crown, Trash2, LogOut, MessageSquare, Check, X, HandHelping, AlertTriangle, Send, Lock
 } from 'lucide-react';
 import { Github, Linkedin, Whatsapp } from '@/components/ui/Icons/Icons';
 import { createClient } from '@/lib/supabase/client';
@@ -1145,6 +1145,18 @@ export default function ProjectDetailClient({ id }) {
                         )}
                       </div>
                     </div>
+
+                    {/* Unregistered User Prompt */}
+                    {!user && (
+                      <Card style={{ padding: '16px', marginBottom: '16px', backgroundColor: 'var(--color-surface)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <Lock size={20} style={{ color: 'var(--color-action)' }} />
+                          <span style={{ fontSize: 'var(--text-sm)', lineHeight: '1.5' }}>
+                            Please <Link href={`/login?redirect=/projects/${id}`} style={{ fontWeight: 'bold', textDecoration: 'underline', color: 'var(--color-action)' }}>Sign In</Link> to view full contact details and request to join this team.
+                          </span>
+                        </div>
+                      </Card>
+                    )}
 
                     {/* Members List */}
                     <div className={styles.membersList}>
