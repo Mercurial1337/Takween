@@ -29,7 +29,11 @@ export default function ProjectsClient() {
   const debouncedSearch = useDebounce(searchQuery, 350);
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  // Re-fetch handled by fetchProjects dependency array
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPage(1);
+  }, [debouncedSearch, departmentFilter]);
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -87,7 +91,7 @@ export default function ProjectsClient() {
 
   // Re-fetch projects whenever search or filter changes
   useEffect(() => {
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     fetchProjects();
   }, [fetchProjects]);
