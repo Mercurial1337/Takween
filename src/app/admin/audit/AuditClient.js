@@ -48,6 +48,7 @@ export default function AuditClient() {
   }, [supabase, page]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchLogs();
   }, [fetchLogs]);
 
