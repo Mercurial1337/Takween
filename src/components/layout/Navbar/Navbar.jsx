@@ -46,6 +46,7 @@ export default function Navbar() {
 
   const navLinks = [
     { href: '/projects', label: 'Projects' },
+    { href: '/students', label: 'Students' },
   ];
 
   const isActive = (href) => pathname === href || pathname.startsWith(href + '/');

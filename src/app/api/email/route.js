@@ -233,6 +233,34 @@ export async function POST(request) {
           <p>Your team remains active. You can continue to recruit members or consider requesting a merge with another team.</p>
         `;
         break;
+      case 'invite_received':
+        subject = `Team Invitation: ${projectName}`;
+        innerContent = `
+          <h2>You've Been Invited! 🎉</h2>
+          <p>Hello ${recipientName},</p>
+          <p><strong>${actorName}</strong> has invited you to join their team for the project <strong>${projectName}</strong>.</p>
+          ${message ? `<div class="message-box"><p>"${message}"</p></div>` : ''}
+          <p>Log in to your dashboard to review and accept or decline this invitation.</p>
+        `;
+        break;
+      case 'invite_accepted':
+        subject = `Invitation Accepted: ${projectName}`;
+        innerContent = `
+          <h2>Invitation Accepted! 🤝</h2>
+          <p>Hello ${recipientName},</p>
+          <p>Great news! <strong>${actorName}</strong> has accepted your invitation to join the team for <strong>${projectName}</strong>.</p>
+          <p>They are now a member of your team. Log in to see your updated team roster.</p>
+        `;
+        break;
+      case 'invite_rejected':
+        subject = `Invitation Update: ${projectName}`;
+        innerContent = `
+          <h2>Invitation Update</h2>
+          <p>Hello ${recipientName},</p>
+          <p><strong>${actorName}</strong> has declined your invitation to join the team for <strong>${projectName}</strong>.</p>
+          <p>You can browse the Student Directory to find other students looking for a team.</p>
+        `;
+        break;
       default:
         return NextResponse.json({ error: 'Invalid notification type' }, { status: 400 });
     }

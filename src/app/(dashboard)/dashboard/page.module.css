@@ -266,3 +266,82 @@
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
 }
+
+.inviteCard {
+  padding: var(--space-md) var(--space-lg);
+  border-left: 3px solid var(--color-success);
+}
+
+.inviteCardContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.inviteCardInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1;
+  min-width: 0;
+}
+
+.inviteActions {
+  display: flex;
+  gap: var(--space-xs);
+  flex-shrink: 0;
+}
+
+.acceptBtn,
+.rejectBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  cursor: pointer;
+  border: none;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.acceptBtn {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.acceptBtn:hover {
+  background: var(--color-success);
+  color: #fff;
+}
+
+.rejectBtn {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+}
+
+.rejectBtn:hover {
+  background: var(--color-error);
+  color: #fff;
+}
+
+.acceptBtn:disabled,
+.rejectBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .inviteCardContent {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .inviteActions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+

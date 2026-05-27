@@ -54,6 +54,7 @@ export const profileUpdateSchema = z.object({
   linkedin_url: z.string().url().optional().or(z.literal('')),
   github_url: z.string().url().optional().or(z.literal('')),
   skills: z.array(z.string()).optional(),
+  is_looking_for_team: z.boolean().optional(),
 });
 
 // ============================================================================
@@ -116,6 +117,18 @@ export const joinRequestSchema = z.object({
 });
 
 export const joinRequestActionSchema = z.object({
+  action: z.enum(['accepted', 'rejected']),
+});
+
+// ============================================================================
+// TEAM INVITE SCHEMAS
+// ============================================================================
+
+export const teamInviteSchema = z.object({
+  message: z.string().max(500, 'Message cannot exceed 500 characters').optional().or(z.literal('')),
+});
+
+export const teamInviteActionSchema = z.object({
   action: z.enum(['accepted', 'rejected']),
 });
 
