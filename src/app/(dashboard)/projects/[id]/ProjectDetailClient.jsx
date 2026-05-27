@@ -1170,7 +1170,7 @@ export default function ProjectDetailClient({ id }) {
                                       <Crown size={10} /> Owner
                                     </Badge>
                                   )}
-                                  {memberProfile?.github_url && (
+                                  {canViewFullDetails && memberProfile?.github_url && (
                                     <a
                                       href={memberProfile.github_url}
                                       target="_blank"
@@ -1182,7 +1182,7 @@ export default function ProjectDetailClient({ id }) {
                                       <Github size={14} />
                                     </a>
                                   )}
-                                  {memberProfile?.linkedin_url && (
+                                  {canViewFullDetails && memberProfile?.linkedin_url && (
                                     <a
                                       href={memberProfile.linkedin_url}
                                       target="_blank"
@@ -1194,7 +1194,7 @@ export default function ProjectDetailClient({ id }) {
                                       <Linkedin size={14} />
                                     </a>
                                   )}
-                                  {memberProfile?.whatsapp_number && (
+                                  {canViewFullDetails && memberProfile?.whatsapp_number && (
                                     <a
                                       href={`https://wa.me/${memberProfile.whatsapp_number.replace(/\D/g, '')}`}
                                       target="_blank"
@@ -1256,7 +1256,7 @@ export default function ProjectDetailClient({ id }) {
                               <div className={styles.memberNameRow}>
                                 <span className={styles.memberName}>{m.full_name}</span>
                               </div>
-                              {m.notes && <p className={styles.memberLevel}>{m.notes}</p>}
+                              {user && m.notes && <p className={styles.memberLevel}>{m.notes}</p>}
                               {isMember && m.whatsapp_number && (
                                 <div className={styles.memberContactInfo}>
                                   <a
