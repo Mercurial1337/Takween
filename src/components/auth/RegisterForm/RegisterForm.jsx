@@ -395,9 +395,9 @@ export default function RegisterForm() {
             id="reg-whatsapp"
             label="WhatsApp Number"
             value={formData.whatsapp_number}
-            onChange={(e) => updateField('whatsapp_number', e.target.value)}
+            onChange={(e) => updateField('whatsapp_number', e.target.value.replace(/^0/, ''))}
             error={errors.whatsapp_number}
-            helperText="Only visible to your team members"
+            helperText="E.g. for +20 1009426569, select EG +20 and type 1009426569. We automatically remove leading zeros."
             required
             autoComplete="tel"
             placeholder="1009426569"
@@ -420,21 +420,21 @@ export default function RegisterForm() {
                   minWidth: '62px',
                 }}
               >
-                <option value="+20">🇪🇬 +20</option>
-                <option value="+966">🇸🇦 +966</option>
-                <option value="+971">🇦🇪 +971</option>
-                <option value="+974">🇶🇦 +974</option>
-                <option value="+965">🇰🇼 +965</option>
-                <option value="+973">🇧🇭 +973</option>
-                <option value="+968">🇴🇲 +968</option>
-                <option value="+962">🇯🇴 +962</option>
-                <option value="+961">🇱🇧 +961</option>
-                <option value="+1">🇺🇸 +1</option>
-                <option value="+44">🇬🇧 +44</option>
-                <option value="+49">🇩🇪 +49</option>
-                <option value="+33">🇫🇷 +33</option>
-                <option value="+90">🇹🇷 +90</option>
-                <option value="+91">🇮🇳 +91</option>
+                <option value="+20">EG +20</option>
+                <option value="+966">SA +966</option>
+                <option value="+971">AE +971</option>
+                <option value="+974">QA +974</option>
+                <option value="+965">KW +965</option>
+                <option value="+973">BH +973</option>
+                <option value="+968">OM +968</option>
+                <option value="+962">JO +962</option>
+                <option value="+961">LB +961</option>
+                <option value="+1">US +1</option>
+                <option value="+44">UK +44</option>
+                <option value="+49">DE +49</option>
+                <option value="+33">FR +33</option>
+                <option value="+90">TR +90</option>
+                <option value="+91">IN +91</option>
               </select>
             }
           />
