@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, FolderOpen, Building2, GraduationCap, Sparkles, Users, UserPlus, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, FolderOpen, Building2, GraduationCap, Sparkles, Users, UserPlus, ClipboardList, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import styles from './layout.module.css';
 
@@ -16,6 +16,7 @@ const adminLinks = [
   { href: '/admin/teams', icon: Users, label: 'Teams' },
   { href: '/admin/invites', icon: UserPlus, label: 'Invites' },
   { href: '/admin/audit', icon: ClipboardList, label: 'Audit Logs' },
+  { href: '/admin/feedback', icon: MessageSquare, label: 'Feedback' },
 ];
 
 export default function AdminLayout({ children }) {
