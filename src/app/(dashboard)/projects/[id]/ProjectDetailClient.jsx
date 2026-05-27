@@ -44,6 +44,12 @@ export default function ProjectDetailClient({ id }) {
   const [seekerMessage, setSeekerMessage] = useState('');
 
   // Modals
+  const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
+  const [teamDescription, setTeamDescription] = useState('');
+  
+  const [showEditDescriptionModal, setShowEditDescriptionModal] = useState(false);
+  const [editDescription, setEditDescription] = useState('');
+  
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [joinMessage, setJoinMessage] = useState('');
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
@@ -261,7 +267,8 @@ export default function ProjectDetailClient({ id }) {
   }, [fetchProject]);
 
   // Create team
-  const handleCreateTeam = async () => {
+  const handleCreateTeam = async (e) => {
+    if (e) e.preventDefault();
     if (!user) { router.push('/login'); return; }
 
     const isGraduationProject = project?.title?.toLowerCase().includes('graduation');
@@ -278,7 +285,8 @@ export default function ProjectDetailClient({ id }) {
         .insert({
           project_id: id,
           owner_id: user.id,
-          department_id: profile?.department_id || null
+          department_id: profile?.department_id || null,
+          description: teamDescription || null
         })
         .select()
         .single();
@@ -291,6 +299,30 @@ export default function ProjectDetailClient({ id }) {
       showToast({ title: 'Team created', message: 'You are now the team owner.', variant: 'success' });
       await fetchProject();
       setSelectedTeamId(newTeam.id);
+      setShowCreateTeamModal(false);
+      setTeamDescription('');
+    } catch (err) {
+      showToast({ title: 'Error', message: err.message, variant: 'error' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Edit team description
+  const handleEditDescription = async (e) => {
+    if (e) e.preventDefault();
+    setActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from('teams')
+        .update({ description: editDescription || null })
+        .eq('id', selectedTeam.id);
+      
+      if (error) throw error;
+      
+      showToast({ title: 'Description updated', variant: 'success' });
+      await fetchProject();
+      setShowEditDescriptionModal(false);
     } catch (err) {
       showToast({ title: 'Error', message: err.message, variant: 'error' });
     } finally {
@@ -858,7 +890,7 @@ export default function ProjectDetailClient({ id }) {
                 </p>
                 {user ? (
                   !userHasTeam && profile?.role === 'student' && (
-                    <Button onClick={handleCreateTeam} loading={actionLoading} icon={Plus}>
+                    <Button onClick={() => setShowCreateTeamModal(true)} icon={Plus}>
                       Create Team
                     </Button>
                   )
@@ -881,7 +913,7 @@ export default function ProjectDetailClient({ id }) {
                     {' '}({filteredTeams.length})
                   </h3>
                   {user && !userHasTeam && profile?.role === 'student' && (
-                    <Button onClick={handleCreateTeam} loading={actionLoading} icon={Plus} size="sm">
+                    <Button onClick={() => setShowCreateTeamModal(true)} icon={Plus} size="sm">
                       Create Team
                     </Button>
                   )}
@@ -986,6 +1018,37 @@ export default function ProjectDetailClient({ id }) {
                     {/* Team Details Header */}
                     <div className={styles.teamHeader}>
                       <div>
+                          <div className={styles.teamDetailsHeader}>
+                            <h3 className={styles.sectionTitle}>
+                              Team Details
+                              {isOwner && (
+                                <button
+                                  className={styles.editBtn}
+                                  onClick={() => {
+                                    setEditDescription(selectedTeam.description || '');
+                                    setShowEditDescriptionModal(true);
+                                  }}
+                                  title="Edit Requirements"
+                                  style={{
+                                    background: 'none', border: 'none', color: 'var(--color-primary)',
+                                    cursor: 'pointer', fontSize: 'var(--text-sm)', marginLeft: '12px',
+                                    fontWeight: 'normal', textDecoration: 'underline'
+                                  }}
+                                >
+                                  Edit Requirements
+                                </button>
+                              )}
+                            </h3>
+                            {selectedTeam.description && (
+                              <div className={styles.teamDescriptionBox} style={{
+                                backgroundColor: 'var(--color-surface-hover)', padding: '16px',
+                                borderRadius: 'var(--radius-md)', marginBottom: '24px', fontSize: 'var(--text-sm)'
+                              }}>
+                                <h4 style={{ margin: '0 0 8px 0', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Requirements & Description</h4>
+                                <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{selectedTeam.description}</p>
+                              </div>
+                            )}
+                          </div>
                         <h2 className={styles.teamTitle}>
                           {selectedTeam.profiles?.full_name}&apos;s Team Details
                         </h2>
@@ -1602,6 +1665,72 @@ export default function ProjectDetailClient({ id }) {
           />
         </div>
       </Modal>
+      {/* Create Team Modal */}
+      {showCreateTeamModal && (
+        <Modal
+          title="Create Team"
+          onClose={() => { setShowCreateTeamModal(false); setTeamDescription(''); }}
+        >
+          <form onSubmit={handleCreateTeam} className={styles.modalForm}>
+            <p className={styles.modalText}>
+              You are about to create a team for <strong>{project.title}</strong>. You will automatically be added as the team owner.
+            </p>
+            <div className={styles.formGroup}>
+              <label htmlFor="team-desc" className={styles.label}>Requirements & Description (Optional)</label>
+              <textarea
+                id="team-desc"
+                value={teamDescription}
+                onChange={(e) => setTeamDescription(e.target.value)}
+                placeholder="What exactly do you need? (e.g. Need a React developer, or محتاجين حد شاطر في الـ Backend)"
+                className={styles.textarea}
+                rows={4}
+              />
+              <p className={styles.helperText} style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', marginTop: '4px' }}>
+                This will be visible to students browsing teams to join. You can type in Arabic or English.
+              </p>
+            </div>
+            <div className={styles.modalActions}>
+              <Button type="button" variant="outline" onClick={() => setShowCreateTeamModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" loading={actionLoading}>
+                Create Team
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Edit Description Modal */}
+      {showEditDescriptionModal && selectedTeam && (
+        <Modal
+          title="Edit Team Requirements"
+          onClose={() => setShowEditDescriptionModal(false)}
+        >
+          <form onSubmit={handleEditDescription} className={styles.modalForm}>
+            <div className={styles.formGroup}>
+              <label htmlFor="edit-team-desc" className={styles.label}>Requirements & Description</label>
+              <textarea
+                id="edit-team-desc"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="What exactly do you need? (e.g. Need a React developer, or محتاجين حد شاطر في الـ Backend)"
+                className={styles.textarea}
+                rows={5}
+              />
+            </div>
+            <div className={styles.modalActions}>
+              <Button type="button" variant="outline" onClick={() => setShowEditDescriptionModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" loading={actionLoading}>
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
     </div>
   );
 }
