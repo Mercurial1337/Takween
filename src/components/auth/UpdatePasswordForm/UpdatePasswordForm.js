@@ -69,7 +69,7 @@ export default function UpdatePasswordForm() {
       setSubmitStatus({ type: 'success', message: 'Password updated successfully! Redirecting...' });
       
       setTimeout(() => {
-        router.push('/dashboard');
+        router.push('/projects');
         router.refresh();
       }, 1500);
       

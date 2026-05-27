@@ -61,17 +61,17 @@ export async function updateSession(request) {
     return NextResponse.redirect(url)
   }
 
-  // If authenticated user visits the landing page, redirect to dashboard
+  // If authenticated user visits the landing page, redirect to projects
   if (user && pathname === '/') {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = '/projects'
     return NextResponse.redirect(url)
   }
 
-  // If user is authenticated and tries to access auth pages, redirect to dashboard
+  // If user is authenticated and tries to access auth pages, redirect to projects
   if (user && authPaths.some(path => pathname.startsWith(path))) {
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = '/projects'
     return NextResponse.redirect(url)
   }
 
@@ -86,7 +86,7 @@ export async function updateSession(request) {
 
     if (!profile || profile.role !== 'admin') {
       const url = request.nextUrl.clone()
-      url.pathname = '/dashboard'
+      url.pathname = '/projects'
       return NextResponse.redirect(url)
     }
   }

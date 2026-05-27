@@ -26,7 +26,7 @@ export default function AdminLayout({ children }) {
 
   useEffect(() => {
     if (!loading && profile && profile.role !== 'admin') {
-      router.push('/dashboard');
+      router.push('/projects');
     }
   }, [profile, loading, router]);
 
@@ -54,8 +54,8 @@ export default function AdminLayout({ children }) {
           ))}
         </nav>
         <div className={styles.sidebarFooter}>
-          <Link href="/dashboard" className={styles.backLink}>
-            Back to Dashboard
+          <Link href="/projects" className={styles.backLink}>
+            Back to Projects
           </Link>
         </div>
       </aside>

@@ -64,7 +64,7 @@ export default function LoginForm() {
       });
       setSubmitStatus({ type: 'success', message: 'Welcome back! Redirecting...' });
 
-      const redirect = searchParams.get('redirect') || '/dashboard';
+      const redirect = searchParams.get('redirect') || '/projects';
       router.push(redirect);
       router.refresh();
     } catch (err) {

@@ -265,7 +265,7 @@ export default function RegisterForm() {
 
       showToast({ title: 'Welcome to Takween', message: 'Your account has been created.', variant: 'success' });
       setSubmitStatus({ type: 'success', message: 'Your account has been created! Redirecting...' });
-      router.push('/dashboard');
+      router.push('/projects');
       router.refresh();
     } catch (err) {
       showToast({ title: 'Something went wrong', message: 'Please try again later.', variant: 'error' });

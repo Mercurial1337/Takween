@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Bell, ChevronDown, LogOut, User, LayoutDashboard, Settings } from 'lucide-react';
+import { Menu, X, Bell, ChevronDown, LogOut, User, LayoutDashboard, Settings, FolderOpen } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationsContext';
 import Avatar from '@/components/ui/Avatar/Avatar';
@@ -113,6 +113,10 @@ export default function Navbar() {
 
                   {profileMenuOpen && (
                     <div className={styles.dropdown}>
+                      <Link href="/projects" className={styles.dropdownItem}>
+                        <FolderOpen size={16} />
+                        Projects
+                      </Link>
                       <Link href="/dashboard" className={styles.dropdownItem}>
                         <LayoutDashboard size={16} />
                         Dashboard
