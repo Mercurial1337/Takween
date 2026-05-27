@@ -6,6 +6,7 @@ import {
   Users, Building2, ArrowLeft, Plus, UserPlus, UserMinus,
   Crown, Trash2, LogOut, MessageSquare, Check, X, HandHelping, AlertTriangle, Send
 } from 'lucide-react';
+import { Github, Linkedin } from '@/components/ui/Icons/Icons';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
@@ -1051,6 +1052,30 @@ export default function ProjectDetailClient({ id }) {
                                       <Crown size={10} /> Owner
                                     </Badge>
                                   )}
+                                  {memberProfile?.github_url && (
+                                    <a
+                                      href={memberProfile.github_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className={styles.socialIcon}
+                                      title="GitHub"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <Github size={14} />
+                                    </a>
+                                  )}
+                                  {memberProfile?.linkedin_url && (
+                                    <a
+                                      href={memberProfile.linkedin_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className={`${styles.socialIcon} ${styles.socialIconLinkedin}`}
+                                      title="LinkedIn"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <Linkedin size={14} />
+                                    </a>
+                                  )}
                                 </div>
                                 {canViewFullDetails && memberProfile?.levels?.name && (
                                   <p className={styles.memberLevel}>{memberProfile.levels.name}</p>
@@ -1225,6 +1250,34 @@ export default function ProjectDetailClient({ id }) {
                       </Link>
                       {seeker.profiles?.levels?.name && (
                         <p className={styles.seekerLevel}>{seeker.profiles.levels.name}</p>
+                      )}
+                      {(seeker.profiles?.github_url || seeker.profiles?.linkedin_url) && (
+                        <div className={styles.seekerSocialLinks}>
+                          {seeker.profiles?.github_url && (
+                            <a
+                              href={seeker.profiles.github_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={styles.socialIcon}
+                              title="GitHub"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Github size={14} />
+                            </a>
+                          )}
+                          {seeker.profiles?.linkedin_url && (
+                            <a
+                              href={seeker.profiles.linkedin_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`${styles.socialIcon} ${styles.socialIconLinkedin}`}
+                              title="LinkedIn"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Linkedin size={14} />
+                            </a>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
