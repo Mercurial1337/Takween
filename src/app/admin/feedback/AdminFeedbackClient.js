@@ -17,28 +17,29 @@ export default function AdminFeedbackClient() {
   const { showToast } = useToast();
   const supabase = createClient();
 
-  const fetchFeedback = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('feedback')
-        .select(`
-          *,
-          profiles:user_id (full_name, email, avatar_url)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setFeedback(data || []);
-    } catch (err) {
-      console.error(err);
-      showToast({ title: 'Error', message: 'Failed to load feedback.', variant: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchFeedback = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('feedback')
+          .select(`
+            *,
+            profiles:user_id (full_name, email, avatar_url)
+          `)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setFeedback(data || []);
+      } catch (err) {
+        console.error(err);
+        showToast({ title: 'Error', message: 'Failed to load feedback.', variant: 'error' });
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchFeedback();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const updateStatus = async (id, newStatus) => {
