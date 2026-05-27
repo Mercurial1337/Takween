@@ -25,11 +25,13 @@ CREATE INDEX IF NOT EXISTS idx_project_seekers_user ON public.project_seekers(us
 ALTER TABLE public.project_seekers ENABLE ROW LEVEL SECURITY;
 
 -- Anyone can read project seekers
+DROP POLICY IF EXISTS "Anyone can view project seekers" ON public.project_seekers;
 CREATE POLICY "Anyone can view project seekers"
   ON public.project_seekers FOR SELECT
   USING (true);
 
 -- Users can insert their own seeker record (must be a student)
+DROP POLICY IF EXISTS "Students can insert own seeker record" ON public.project_seekers;
 CREATE POLICY "Students can insert own seeker record"
   ON public.project_seekers FOR INSERT
   WITH CHECK (
@@ -38,6 +40,7 @@ CREATE POLICY "Students can insert own seeker record"
   );
 
 -- Users can delete their own seeker record
+DROP POLICY IF EXISTS "Users can delete own seeker record" ON public.project_seekers;
 CREATE POLICY "Users can delete own seeker record"
   ON public.project_seekers FOR DELETE
   USING (auth.uid() = user_id);

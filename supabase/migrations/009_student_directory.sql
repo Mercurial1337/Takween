@@ -64,11 +64,13 @@ ALTER TABLE public.notifications ADD CONSTRAINT notifications_type_check CHECK (
 ALTER TABLE public.team_invites ENABLE ROW LEVEL SECURITY;
 
 -- Users can view invites addressed to them
+DROP POLICY IF EXISTS "Users can view own invites" ON public.team_invites;
 CREATE POLICY "Users can view own invites"
   ON public.team_invites FOR SELECT
   USING (auth.uid() = user_id);
 
 -- Team owners can view invites they sent
+DROP POLICY IF EXISTS "Team owners can view sent invites" ON public.team_invites;
 CREATE POLICY "Team owners can view sent invites"
   ON public.team_invites FOR SELECT
   USING (
@@ -76,6 +78,7 @@ CREATE POLICY "Team owners can view sent invites"
   );
 
 -- Team owners can create invites for their teams
+DROP POLICY IF EXISTS "Team owners can create invites" ON public.team_invites;
 CREATE POLICY "Team owners can create invites"
   ON public.team_invites FOR INSERT
   WITH CHECK (
@@ -83,6 +86,7 @@ CREATE POLICY "Team owners can create invites"
   );
 
 -- Invited users can update (accept/reject) their own invites
+DROP POLICY IF EXISTS "Users can update own invites" ON public.team_invites;
 CREATE POLICY "Users can update own invites"
   ON public.team_invites FOR UPDATE
   USING (auth.uid() = user_id);

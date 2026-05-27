@@ -18,6 +18,7 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_entity_type ON audit_logs (entity_type
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- Only admins can read audit logs
+DROP POLICY IF EXISTS "Admins can view audit logs" ON audit_logs;
 CREATE POLICY "Admins can view audit logs"
   ON audit_logs
   FOR SELECT
@@ -30,6 +31,7 @@ CREATE POLICY "Admins can view audit logs"
   );
 
 -- Only admins can insert audit logs
+DROP POLICY IF EXISTS "Admins can insert audit logs" ON audit_logs;
 CREATE POLICY "Admins can insert audit logs"
   ON audit_logs
   FOR INSERT
