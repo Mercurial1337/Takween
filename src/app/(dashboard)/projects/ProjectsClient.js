@@ -19,6 +19,7 @@ const PAGE_SIZE = 9;
 
 export default function ProjectsClient() {
   const [projects, setProjects] = useState([]);
+  const [featuredProject, setFeaturedProject] = useState(null);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -68,11 +69,31 @@ export default function ProjectsClient() {
       const to = from + PAGE_SIZE - 1;
 
       const { data, count } = await query
+        .order('is_featured', { ascending: false })
         .order('created_at', { ascending: false })
         .range(from, to);
 
-      if (data) setProjects(data);
-      if (count !== null) setTotalCount(count);
+      if (data) {
+        // If we are on page 1 and there is no search/filter, extract the featured project
+        if (page === 1 && !debouncedSearch && !departmentFilter) {
+          const featured = data.find(p => p.is_featured);
+          if (featured) {
+            setFeaturedProject(featured);
+            setProjects(data.filter(p => p.id !== featured.id));
+          } else {
+            setFeaturedProject(null);
+            setProjects(data);
+          }
+        } else {
+          setFeaturedProject(null);
+          setProjects(data);
+        }
+      }
+      if (count !== null) {
+        // We subtract 1 from totalCount if featuredProject is extracted, for accurate pagination?
+        // Actually, let's keep totalCount as is.
+        setTotalCount(count);
+      }
     } catch (err) {
       console.error('Error fetching projects:', err);
     } finally {
@@ -148,13 +169,39 @@ export default function ProjectsClient() {
       </div>
 
       {/* Results */}
-      {projects.length === 0 ? (
+      {featuredProject && (
+        <Link href={`/projects/${featuredProject.id}`} className={styles.heroLink}>
+          <div className={styles.heroCard}>
+            <h2 className={styles.heroTitle}>
+              {featuredProject.title}
+              <span className={styles.heroTitleBadge}>Main Event</span>
+            </h2>
+            <p className={styles.heroDesc}>{featuredProject.description}</p>
+            <div className={styles.heroFooter}>
+              <div className={styles.heroStat}>
+                <Building2 size={18} />
+                {featuredProject.departments?.name || 'Universal'}
+              </div>
+              <div className={styles.heroStat}>
+                <UsersRound size={18} />
+                {featuredProject.teams?.length || 0} teams forming
+              </div>
+              <div className={styles.heroStat}>
+                <Users size={18} />
+                Up to {featuredProject.max_team_size} members per team
+              </div>
+            </div>
+          </div>
+        </Link>
+      )}
+
+      {projects.length === 0 && !featuredProject ? (
         <EmptyState
           icon={Search}
           title="No projects found"
           description={searchQuery || departmentFilter ? 'Try adjusting your filters.' : 'No projects are available right now. Check back later.'}
         />
-      ) : (
+      ) : projects.length > 0 && (
         <>
         <div className={styles.grid}>
           {projects.map((project) => {

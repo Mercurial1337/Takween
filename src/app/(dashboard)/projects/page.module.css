@@ -206,3 +206,89 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Hero Project Card (Graduation Project) */
+.heroLink {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  margin-bottom: var(--space-2xl);
+  animation: fadeIn 0.6s ease-out;
+}
+
+.heroCard {
+  padding: var(--space-3xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
+  color: white;
+  border-radius: var(--radius-2xl);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: none;
+}
+
+.heroCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.2);
+}
+
+.heroCard::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+  transform: rotate(30deg);
+  pointer-events: none;
+}
+
+.heroTitle {
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.heroTitleBadge {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  backdrop-filter: blur(4px);
+}
+
+.heroDesc {
+  font-size: var(--text-lg);
+  line-height: 1.6;
+  opacity: 0.9;
+  max-width: 800px;
+  margin: 0;
+}
+
+.heroFooter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xl);
+  margin-top: var(--space-md);
+  padding-top: var(--space-lg);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.heroStat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--text-md);
+  font-weight: 500;
+}

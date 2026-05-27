@@ -36,6 +36,8 @@ export default function ProjectDetailClient({ id }) {
   const [departments, setDepartments] = useState([]);
   const [selectedTeamId, setSelectedTeamId] = useState(null);
   const [deptFilter, setDeptFilter] = useState('all');
+  const [sortFilter, setSortFilter] = useState('newest');
+  const [skillFilter, setSkillFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('teams'); // 'teams' or 'students'
@@ -69,27 +71,60 @@ export default function ProjectDetailClient({ id }) {
   const [inviteTarget, setInviteTarget] = useState(null);
   const [inviteMessage, setInviteMessage] = useState('');
 
-  // Visibility logic
+  // Visibility and Filtering logic
+  const availableSkills = useMemo(() => {
+    const skillsSet = new Map();
+    allMembers.forEach(m => {
+      m.profiles?.profile_skills?.forEach(ps => {
+        if (ps.skills && ps.skills.name) {
+          skillsSet.set(ps.skill_id, ps.skills.name);
+        }
+      });
+    });
+    return Array.from(skillsSet.entries()).map(([id, name]) => ({ id, name }));
+  }, [allMembers]);
+
   const filteredTeams = useMemo(() => {
     if (!project) return [];
 
     const isGraduationProject = project.title?.toLowerCase().includes('graduation');
     const projectRequiresDepartment = isGraduationProject || !!project.department_id;
 
-    // If student, strictly segregate to their department if the project requires it
+    let result = teams;
+
+    // 1. Department Filtering
     if (user && profile && profile.role === 'student' && projectRequiresDepartment) {
       const studentDeptId = profile.department_id;
       if (!studentDeptId) return []; // Require department to see teams
-      return teams.filter(t => t.department_id === studentDeptId);
+      result = result.filter(t => t.department_id === studentDeptId);
+    } else if (deptFilter && deptFilter !== 'all') {
+      result = result.filter(t => t.department_id === deptFilter);
     }
 
-    // If admin, guest, or project is universal, support filter dropdown or show all
-    if (deptFilter && deptFilter !== 'all') {
-      return teams.filter(t => t.department_id === deptFilter);
+    // 2. Skills Filtering
+    if (skillFilter && skillFilter !== 'all') {
+      result = result.filter(t => {
+        const membersInTeam = allMembers.filter(m => m.team_id === t.id);
+        return membersInTeam.some(m => 
+          m.profiles?.profile_skills?.some(ps => ps.skill_id === skillFilter)
+        );
+      });
     }
 
-    return teams;
-  }, [teams, project, user, profile, deptFilter]);
+    // 3. Sorting
+    result = [...result].sort((a, b) => {
+      if (sortFilter === 'members_high' || sortFilter === 'members_low') {
+        const aMembersCount = allMembers.filter(m => m.team_id === a.id).length + allManualMembers.filter(m => m.team_id === a.id).length;
+        const bMembersCount = allMembers.filter(m => m.team_id === b.id).length + allManualMembers.filter(m => m.team_id === b.id).length;
+        
+        if (sortFilter === 'members_high') return bMembersCount - aMembersCount;
+        if (sortFilter === 'members_low') return aMembersCount - bMembersCount;
+      }
+      return new Date(b.created_at) - new Date(a.created_at); // newest
+    });
+
+    return result;
+  }, [teams, project, user, profile, deptFilter, skillFilter, sortFilter, allMembers, allManualMembers]);
 
   const selectedTeam = useMemo(() => {
     if (selectedTeamId) {
@@ -827,15 +862,41 @@ export default function ProjectDetailClient({ id }) {
       <p className={styles.description}>{project.description}</p>
 
       {/* Filter and Top Bar */}
-      {(profile?.role === 'admin' || !user) && teams.length > 0 && (
+      {teams.length > 0 && (
         <div className={styles.filterBar}>
+          {!(user && profile?.role === 'student' && project?.title?.toLowerCase().includes('graduation')) && (
+            <div className={styles.filterWrapper}>
+              <Select
+                id="dept-filter"
+                placeholder="All Departments"
+                options={[{ value: 'all', label: 'All Departments' }, ...departments.map((d) => ({ value: d.id, label: d.name }))]}
+                value={deptFilter}
+                onChange={(e) => setDeptFilter(e.target.value)}
+              />
+            </div>
+          )}
+          
           <div className={styles.filterWrapper}>
             <Select
-              id="dept-filter"
-              placeholder="All Departments"
-              options={departments.map((d) => ({ value: d.id, label: d.name }))}
-              value={deptFilter}
-              onChange={(e) => setDeptFilter(e.target.value)}
+              id="skill-filter"
+              placeholder="All Skills"
+              options={[{ value: 'all', label: 'All Skills' }, ...availableSkills.map((s) => ({ value: s.id, label: s.name }))]}
+              value={skillFilter}
+              onChange={(e) => setSkillFilter(e.target.value)}
+            />
+          </div>
+
+          <div className={styles.filterWrapper}>
+            <Select
+              id="sort-filter"
+              placeholder="Sort By"
+              options={[
+                { value: 'newest', label: 'Newest First' },
+                { value: 'members_high', label: 'Members (High to Low)' },
+                { value: 'members_low', label: 'Members (Low to High)' }
+              ]}
+              value={sortFilter}
+              onChange={(e) => setSortFilter(e.target.value)}
             />
           </div>
         </div>
