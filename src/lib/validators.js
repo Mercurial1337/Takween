@@ -54,7 +54,6 @@ export const profileUpdateSchema = z.object({
   linkedin_url: z.string().url().optional().or(z.literal('')),
   github_url: z.string().url().optional().or(z.literal('')),
   skills: z.array(z.string()).optional(),
-  is_looking_for_team: z.boolean().optional(),
 });
 
 // ============================================================================

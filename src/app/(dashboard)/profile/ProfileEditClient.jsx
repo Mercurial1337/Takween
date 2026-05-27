@@ -30,7 +30,6 @@ export default function ProfileEditClient() {
     department_id: '',
     linkedin_url: '',
     github_url: '',
-    is_looking_for_team: false,
   });
   const [skills, setSkills] = useState([]);
   const [levels, setLevels] = useState([]);
@@ -55,7 +54,6 @@ export default function ProfileEditClient() {
         department_id: profile.department_id || '',
         linkedin_url: profile.linkedin_url || '',
         github_url: profile.github_url || '',
-        is_looking_for_team: profile.is_looking_for_team || false,
       });
     });
   }, [profile]);
@@ -124,7 +122,6 @@ export default function ProfileEditClient() {
           department_id: finalDeptId,
           linkedin_url: formData.linkedin_url || null,
           github_url: formData.github_url || null,
-          is_looking_for_team: formData.is_looking_for_team,
         })
         .eq('id', user.id);
 
@@ -259,30 +256,6 @@ export default function ProfileEditClient() {
             placeholder="Search or add skills..."
           />
 
-          {/* Looking for a Team Toggle */}
-          <div className={styles.lftSection}>
-            <label htmlFor="lft-toggle" className={styles.lftLabel}>
-              <div className={styles.lftInfo}>
-                <Search size={18} />
-                <div>
-                  <span className={styles.lftTitle}>Looking for a Team</span>
-                  <span className={styles.lftDesc}>
-                    Enable this to appear in the Student Directory so team owners can find and invite you.
-                  </span>
-                </div>
-              </div>
-              <div className={`${styles.toggle} ${formData.is_looking_for_team ? styles.toggleActive : ''}`}>
-                <input
-                  type="checkbox"
-                  id="lft-toggle"
-                  checked={formData.is_looking_for_team}
-                  onChange={(e) => updateField('is_looking_for_team', e.target.checked)}
-                  className={styles.toggleInput}
-                />
-                <span className={styles.toggleSlider} />
-              </div>
-            </label>
-          </div>
 
           <div className={styles.row}>
             <Input

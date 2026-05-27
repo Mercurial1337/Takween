@@ -137,28 +137,7 @@ describe('profileUpdateSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('accepts is_looking_for_team as true', () => {
-    const result = profileUpdateSchema.safeParse({ is_looking_for_team: true });
-    expect(result.success).toBe(true);
-    expect(result.data.is_looking_for_team).toBe(true);
-  });
 
-  it('accepts is_looking_for_team as false', () => {
-    const result = profileUpdateSchema.safeParse({ is_looking_for_team: false });
-    expect(result.success).toBe(true);
-    expect(result.data.is_looking_for_team).toBe(false);
-  });
-
-  it('allows omitting is_looking_for_team (optional)', () => {
-    const result = profileUpdateSchema.safeParse({ full_name: 'Ahmed' });
-    expect(result.success).toBe(true);
-    expect(result.data.is_looking_for_team).toBeUndefined();
-  });
-
-  it('rejects non-boolean is_looking_for_team', () => {
-    const result = profileUpdateSchema.safeParse({ is_looking_for_team: 'yes' });
-    expect(result.success).toBe(false);
-  });
 });
 
 // ============================================================================

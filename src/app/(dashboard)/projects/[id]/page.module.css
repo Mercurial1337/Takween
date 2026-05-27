@@ -748,3 +748,97 @@
   margin-bottom: 2px;
 }
 
+/* --- Seekers UI --- */
+
+.seekersGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.seekerCard {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-md);
+  gap: var(--space-md);
+  background-color: var(--color-text-inverse);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.seekerCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary-light);
+}
+
+.seekerHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.seekerLink {
+  transition: opacity var(--transition-fast);
+}
+
+.seekerLink:hover {
+  opacity: 0.85;
+}
+
+.seekerLinkName {
+  text-decoration: none;
+  color: inherit;
+  transition: color var(--transition-fast);
+}
+
+.seekerLinkName:hover .seekerName {
+  color: var(--color-primary);
+}
+
+.seekerName {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.seekerLevel {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.seekerMessage {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  font-style: italic;
+  background-color: var(--color-surface);
+  padding: var(--space-sm);
+  border-radius: var(--radius-sm);
+  line-height: var(--leading-relaxed);
+}
+
+.seekerMessage p {
+  margin: 0;
+}
+
+.seekerSkills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.seekerActions {
+  margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-border-light);
+}

@@ -37,6 +37,10 @@ export default function ProjectDetailClient({ id }) {
   const [deptFilter, setDeptFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('teams'); // 'teams' or 'students'
+  const [projectSeekers, setProjectSeekers] = useState([]);
+  const [showSeekerModal, setShowSeekerModal] = useState(false);
+  const [seekerMessage, setSeekerMessage] = useState('');
 
   // Modals
   const [showJoinModal, setShowJoinModal] = useState(false);
@@ -138,6 +142,12 @@ export default function ProjectDetailClient({ id }) {
     ) || null;
   }, [userOwnedTeam, mergeRequests]);
 
+  // Check if current user is seeking a team for this project
+  const userSeekerRecord = useMemo(() => {
+    if (!user) return null;
+    return projectSeekers.find(s => s.user_id === user.id) || null;
+  }, [user, projectSeekers]);
+
   const fetchProject = useCallback(async () => {
     try {
       // Get project
@@ -222,6 +232,15 @@ export default function ProjectDetailClient({ id }) {
           setMergeRequests([]);
         }
       }
+
+      // Get project seekers (available students)
+      const { data: seekersData } = await supabase
+        .from('project_seekers')
+        .select('*, profiles:user_id (id, full_name, avatar_url, email, level_id, levels:level_id (name), linkedin_url, github_url, whatsapp_number, profile_skills (skill_id, skills (name)))')
+        .eq('project_id', id)
+        .order('created_at', { ascending: false });
+      if (seekersData) setProjectSeekers(seekersData);
+
     } catch (err) {
       console.error('Fetch error:', err);
     } finally {
@@ -607,6 +626,43 @@ export default function ProjectDetailClient({ id }) {
     }
   };
 
+  const handleMarkAsSeeker = async () => {
+    setActionLoading(true);
+    try {
+      const { error } = await supabase.from('project_seekers').insert({
+        project_id: project.id,
+        user_id: user.id,
+        message: seekerMessage || null,
+      });
+      if (error) throw error;
+      showToast({ title: 'Availability updated', message: 'You are now listed in the Available Students tab.', variant: 'success' });
+      setShowSeekerModal(false);
+      setSeekerMessage('');
+      await fetchProject();
+    } catch (err) {
+      showToast({ title: 'Error', message: err.message, variant: 'error' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleWithdrawSeeker = async () => {
+    setActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from('project_seekers')
+        .delete()
+        .match({ project_id: project.id, user_id: user.id });
+      if (error) throw error;
+      showToast({ title: 'Availability withdrawn', message: 'You have been removed from the Available Students tab.', variant: 'success' });
+      await fetchProject();
+    } catch (err) {
+      showToast({ title: 'Error', message: err.message, variant: 'error' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div>
@@ -690,7 +746,42 @@ export default function ProjectDetailClient({ id }) {
         </div>
       )}
 
-      {/* Teams display */}
+      {/* Tabs UI */}
+      <div className={styles.tabsContainer}>
+        <div className={styles.tabsList}>
+          <button
+            className={`${styles.tabBtn} ${activeTab === 'teams' ? styles.tabBtnActive : ''}`}
+            onClick={() => setActiveTab('teams')}
+          >
+            <Users size={16} /> Teams
+            <Badge variant="default" size="sm">{filteredTeams.length}</Badge>
+          </button>
+          <button
+            className={`${styles.tabBtn} ${activeTab === 'students' ? styles.tabBtnActive : ''}`}
+            onClick={() => setActiveTab('students')}
+          >
+            <UserPlus size={16} /> Available Students
+            <Badge variant="default" size="sm">{projectSeekers.length}</Badge>
+          </button>
+        </div>
+        
+        {/* Looking for a Team action for students */}
+        {user && profile?.role === 'student' && !userHasTeam && (
+          <div className={styles.seekerAction}>
+            {userSeekerRecord ? (
+              <Button variant="outline" size="sm" onClick={handleWithdrawSeeker} loading={actionLoading} icon={X}>
+                Withdraw Availability
+              </Button>
+            ) : (
+              <Button size="sm" onClick={() => setShowSeekerModal(true)} icon={Check}>
+                I'm looking for a team
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {activeTab === 'teams' && (
       <div className={styles.teamSection}>
         {filteredTeams.length === 0 ? (
           <Card className={styles.noTeamCard}>
@@ -1044,8 +1135,65 @@ export default function ProjectDetailClient({ id }) {
               )}
             </div>
           </div>
-        )}
+      )}
       </div>
+      )}
+
+      {activeTab === 'students' && (
+        <div className={styles.studentsSection}>
+          {projectSeekers.length === 0 ? (
+            <Card className={styles.noTeamCard}>
+              <div className={styles.noTeamContent}>
+                <UserPlus size={32} className={styles.noTeamIcon} />
+                <h3>No available students found</h3>
+                <p>No students have marked themselves as available for this project yet.</p>
+              </div>
+            </Card>
+          ) : (
+            <div className={styles.seekersGrid}>
+              {projectSeekers.map((seeker) => (
+                <Card key={seeker.id} className={styles.seekerCard}>
+                  <div className={styles.seekerHeader}>
+                    <Link href={`/profile/${seeker.user_id}`} className={styles.seekerLink}>
+                      <Avatar name={seeker.profiles?.full_name} src={seeker.profiles?.avatar_url} size="lg" />
+                    </Link>
+                    <div>
+                      <Link href={`/profile/${seeker.user_id}`} className={styles.seekerLinkName}>
+                        <h4 className={styles.seekerName}>{seeker.profiles?.full_name}</h4>
+                      </Link>
+                      {seeker.profiles?.levels?.name && (
+                        <p className={styles.seekerLevel}>{seeker.profiles.levels.name}</p>
+                      )}
+                    </div>
+                  </div>
+                  {seeker.message && (
+                    <div className={styles.seekerMessage}>
+                      <MessageSquare size={14} />
+                      <p>"{seeker.message}"</p>
+                    </div>
+                  )}
+                  {seeker.profiles?.profile_skills?.length > 0 && (
+                    <div className={styles.seekerSkills}>
+                      {seeker.profiles.profile_skills.map((ps) => (
+                        <Badge key={ps.skill_id} variant="default" size="sm">
+                          {ps.skills?.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  {user && isOwner && (
+                    <div className={styles.seekerActions}>
+                      <Button size="sm" icon={UserPlus} variant="primary">
+                        Invite to Team
+                      </Button>
+                    </div>
+                  )}
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Join Request Modal */}
       <Modal
@@ -1243,6 +1391,32 @@ export default function ProjectDetailClient({ id }) {
             </div>
           );
         })()}
+      </Modal>
+
+      {/* Seeker Modal */}
+      <Modal
+        isOpen={showSeekerModal}
+        onClose={() => { setShowSeekerModal(false); setSeekerMessage(''); }}
+        title="Mark as Available"
+        footer={
+          <div className={styles.modalFooter}>
+            <Button variant="ghost" onClick={() => { setShowSeekerModal(false); setSeekerMessage(''); }}>Cancel</Button>
+            <Button onClick={handleMarkAsSeeker} loading={actionLoading} icon={Check}>Mark as Available</Button>
+          </div>
+        }
+      >
+        <div className={styles.modalContent}>
+          <p className={styles.modalText} style={{ marginBottom: 'var(--space-md)' }}>
+            By marking yourself as available, you will appear in the "Available Students" tab for this project. Team owners will be able to see your profile and invite you to their team.
+          </p>
+          <Input
+            id="seeker-message"
+            label="Short Message (optional)"
+            value={seekerMessage}
+            onChange={(e) => setSeekerMessage(e.target.value)}
+            placeholder="e.g., I'm a backend developer looking for a team..."
+          />
+        </div>
       </Modal>
     </div>
   );
