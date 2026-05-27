@@ -1,4 +1,4 @@
-import ProfileEditClient from './ProfileEditClient';
+import ProfileEditClient from './ProfileEditClient.jsx';
 
 export const metadata = {
   title: 'Edit Profile',

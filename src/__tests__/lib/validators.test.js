@@ -9,6 +9,8 @@ import {
   manualMemberSchema,
   joinRequestSchema,
   joinRequestActionSchema,
+  teamInviteSchema,
+  teamInviteActionSchema,
   departmentSchema,
   levelSchema,
   skillSchema,
@@ -133,6 +135,29 @@ describe('profileUpdateSchema', () => {
   it('allows valid linkedin_url', () => {
     const result = profileUpdateSchema.safeParse({ linkedin_url: 'https://linkedin.com/in/test' });
     expect(result.success).toBe(true);
+  });
+
+  it('accepts is_looking_for_team as true', () => {
+    const result = profileUpdateSchema.safeParse({ is_looking_for_team: true });
+    expect(result.success).toBe(true);
+    expect(result.data.is_looking_for_team).toBe(true);
+  });
+
+  it('accepts is_looking_for_team as false', () => {
+    const result = profileUpdateSchema.safeParse({ is_looking_for_team: false });
+    expect(result.success).toBe(true);
+    expect(result.data.is_looking_for_team).toBe(false);
+  });
+
+  it('allows omitting is_looking_for_team (optional)', () => {
+    const result = profileUpdateSchema.safeParse({ full_name: 'Ahmed' });
+    expect(result.success).toBe(true);
+    expect(result.data.is_looking_for_team).toBeUndefined();
+  });
+
+  it('rejects non-boolean is_looking_for_team', () => {
+    const result = profileUpdateSchema.safeParse({ is_looking_for_team: 'yes' });
+    expect(result.success).toBe(false);
   });
 });
 
@@ -341,5 +366,47 @@ describe('adminInviteSchema', () => {
 
   it('rejects invalid email', () => {
     expect(adminInviteSchema.safeParse({ email: 'not-email' }).success).toBe(false);
+  });
+});
+
+// ============================================================================
+// teamInviteSchema & teamInviteActionSchema
+// ============================================================================
+describe('teamInviteSchema', () => {
+  it('allows empty message', () => {
+    expect(teamInviteSchema.safeParse({}).success).toBe(true);
+    expect(teamInviteSchema.safeParse({ message: '' }).success).toBe(true);
+  });
+
+  it('allows valid message', () => {
+    expect(teamInviteSchema.safeParse({ message: 'We need you on our team!' }).success).toBe(true);
+  });
+
+  it('rejects message exceeding 500 characters', () => {
+    const result = teamInviteSchema.safeParse({ message: 'a'.repeat(501) });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts exactly 500 characters', () => {
+    const result = teamInviteSchema.safeParse({ message: 'a'.repeat(500) });
+    expect(result.success).toBe(true);
+  });
+});
+
+describe('teamInviteActionSchema', () => {
+  it('accepts accepted', () => {
+    expect(teamInviteActionSchema.safeParse({ action: 'accepted' }).success).toBe(true);
+  });
+
+  it('accepts rejected', () => {
+    expect(teamInviteActionSchema.safeParse({ action: 'rejected' }).success).toBe(true);
+  });
+
+  it('rejects invalid action', () => {
+    expect(teamInviteActionSchema.safeParse({ action: 'pending' }).success).toBe(false);
+  });
+
+  it('rejects missing action', () => {
+    expect(teamInviteActionSchema.safeParse({}).success).toBe(false);
   });
 });
