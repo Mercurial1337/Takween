@@ -67,6 +67,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS trigger_clear_project_seeker_on_join ON public.team_members;
 CREATE TRIGGER trigger_clear_project_seeker_on_join
   AFTER INSERT ON public.team_members
   FOR EACH ROW

@@ -36,6 +36,7 @@ CREATE INDEX IF NOT EXISTS idx_team_invites_user ON public.team_invites(user_id)
 CREATE INDEX IF NOT EXISTS idx_team_invites_status ON public.team_invites(status);
 
 -- Updated_at trigger
+DROP TRIGGER IF EXISTS set_team_invites_updated_at ON public.team_invites;
 CREATE TRIGGER set_team_invites_updated_at
   BEFORE UPDATE ON public.team_invites
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -102,6 +103,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS trigger_clear_looking_for_team ON public.team_members;
 CREATE TRIGGER trigger_clear_looking_for_team
   AFTER INSERT ON public.team_members
   FOR EACH ROW
