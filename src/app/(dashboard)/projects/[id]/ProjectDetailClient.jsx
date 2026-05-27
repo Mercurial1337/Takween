@@ -1110,7 +1110,7 @@ export default function ProjectDetailClient({ id }) {
                                       className={styles.contactBadge}
                                       title="WhatsApp"
                                     >
-                                      <MessageSquare size={12} /> {memberProfile.whatsapp_number}
+                                      <Whatsapp size={12} /> {memberProfile.whatsapp_number}
                                     </a>
                                   </div>
                                 )}
@@ -1149,7 +1149,7 @@ export default function ProjectDetailClient({ id }) {
                                     className={styles.contactBadge}
                                     title="WhatsApp"
                                   >
-                                    <MessageSquare size={12} /> {m.whatsapp_number}
+                                    <Whatsapp size={12} /> {m.whatsapp_number}
                                   </a>
                                 </div>
                               )}
