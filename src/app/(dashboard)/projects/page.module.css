@@ -221,7 +221,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
-  background: linear-gradient(rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.95)), url('/images/graduation-bg.jpg') center/cover no-repeat;
+  background: linear-gradient(rgba(30, 41, 59, 0.85), rgba(15, 23, 42, 0.95)), url('https://media.licdn.com/dms/image/v2/C4E12AQGQNEORdGPAIQ/article-cover_image-shrink_600_2000/article-cover_image-shrink_600_2000/0/1520078524119?e=2147483647&v=beta&t=jtKSBVpONoVrj2Qa5BSkpSarAPnu12c_lDGHDs4RjUo') center/cover no-repeat;
   color: white;
   border-radius: var(--radius-2xl);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
