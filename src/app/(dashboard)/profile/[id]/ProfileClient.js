@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { User, Mail, Phone, Globe, Code2, ArrowLeft, ShieldAlert, Award, MessageSquare } from 'lucide-react';
-import { Github, Linkedin } from '@/components/ui/Icons/Icons';
+import { Github, Linkedin, Whatsapp } from '@/components/ui/Icons/Icons';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import Card from '@/components/ui/Card/Card';
@@ -176,6 +176,18 @@ export default function ProfileClient({ id }) {
               ) : (
                 <span className={styles.noLink}>No LinkedIn link provided</span>
               )}
+              {profile.whatsapp_number ? (
+                <a
+                  href={`https://wa.me/${profile.whatsapp_number.replace(/\D/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.socialLink}
+                >
+                  <Whatsapp size={16} /> WhatsApp ({profile.whatsapp_number})
+                </a>
+              ) : (
+                <span className={styles.noLink}>No WhatsApp number provided</span>
+              )}
             </div>
           </div>
 
@@ -190,26 +202,14 @@ export default function ProfileClient({ id }) {
                   <Mail size={16} />
                   <span>{profile.email}</span>
                 </div>
-                <div className={styles.contactItem}>
-                  <Phone size={16} />
-                  <span>{profile.whatsapp_number}</span>
-                  <a
-                    href={`https://wa.me/${profile.whatsapp_number.replace(/\D/g, '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.whatsappBtn}
-                  >
-                    <MessageSquare size={14} /> Message
-                  </a>
-                </div>
               </div>
             ) : (
               <div className={styles.protectedContact}>
                 <ShieldAlert className={styles.lockIcon} size={20} />
                 <div>
-                  <p className={styles.protectedTitle}>Contact details hidden</p>
+                  <p className={styles.protectedTitle}>Email address hidden</p>
                   <p className={styles.protectedDesc}>
-                    You must form a team with {profile.full_name.split(' ')[0]} to view their email and WhatsApp number.
+                    You must form a team with {profile.full_name.split(' ')[0]} to view their email.
                   </p>
                 </div>
               </div>

@@ -6,7 +6,7 @@ import {
   Users, Building2, ArrowLeft, Plus, UserPlus, UserMinus,
   Crown, Trash2, LogOut, MessageSquare, Check, X, HandHelping, AlertTriangle, Send
 } from 'lucide-react';
-import { Github, Linkedin } from '@/components/ui/Icons/Icons';
+import { Github, Linkedin, Whatsapp } from '@/components/ui/Icons/Icons';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
@@ -1076,6 +1076,18 @@ export default function ProjectDetailClient({ id }) {
                                       <Linkedin size={14} />
                                     </a>
                                   )}
+                                  {memberProfile?.whatsapp_number && (
+                                    <a
+                                      href={`https://wa.me/${memberProfile.whatsapp_number.replace(/\D/g, '')}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className={`${styles.socialIcon} ${styles.socialIconWhatsapp}`}
+                                      title="WhatsApp"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <Whatsapp size={14} />
+                                    </a>
+                                  )}
                                 </div>
                                 {canViewFullDetails && memberProfile?.levels?.name && (
                                   <p className={styles.memberLevel}>{memberProfile.levels.name}</p>
@@ -1251,7 +1263,7 @@ export default function ProjectDetailClient({ id }) {
                       {seeker.profiles?.levels?.name && (
                         <p className={styles.seekerLevel}>{seeker.profiles.levels.name}</p>
                       )}
-                      {(seeker.profiles?.github_url || seeker.profiles?.linkedin_url) && (
+                      {(seeker.profiles?.github_url || seeker.profiles?.linkedin_url || seeker.profiles?.whatsapp_number) && (
                         <div className={styles.seekerSocialLinks}>
                           {seeker.profiles?.github_url && (
                             <a
@@ -1275,6 +1287,18 @@ export default function ProjectDetailClient({ id }) {
                               onClick={(e) => e.stopPropagation()}
                             >
                               <Linkedin size={14} />
+                            </a>
+                          )}
+                          {seeker.profiles?.whatsapp_number && (
+                            <a
+                              href={`https://wa.me/${seeker.profiles.whatsapp_number.replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`${styles.socialIcon} ${styles.socialIconWhatsapp}`}
+                              title="WhatsApp"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Whatsapp size={14} />
                             </a>
                           )}
                         </div>
