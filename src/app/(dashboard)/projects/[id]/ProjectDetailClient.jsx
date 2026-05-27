@@ -1668,6 +1668,7 @@ export default function ProjectDetailClient({ id }) {
       {/* Create Team Modal */}
       {showCreateTeamModal && (
         <Modal
+          isOpen={true}
           title="Create Team"
           onClose={() => { setShowCreateTeamModal(false); setTeamDescription(''); }}
         >
@@ -1704,6 +1705,7 @@ export default function ProjectDetailClient({ id }) {
       {/* Edit Description Modal */}
       {showEditDescriptionModal && selectedTeam && (
         <Modal
+          isOpen={true}
           title="Edit Team Requirements"
           onClose={() => setShowEditDescriptionModal(false)}
         >
