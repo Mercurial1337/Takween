@@ -96,8 +96,9 @@ export default function ProjectDetailClient({ id }) {
     if (user && profile && profile.role === 'student' && projectRequiresDepartment) {
       const studentDeptId = profile.department_id;
       if (!studentDeptId) return []; // Require department to see teams
-      result = result.filter(t => t.department_id === studentDeptId);
-    } else if (deptFilter && deptFilter !== 'all') {
+    }
+    
+    if (deptFilter && deptFilter !== 'all') {
       result = result.filter(t => t.department_id === deptFilter);
     }
 
@@ -864,17 +865,15 @@ export default function ProjectDetailClient({ id }) {
       {/* Filter and Top Bar */}
       {teams.length > 0 && (
         <div className={styles.filterBar}>
-          {!(user && profile?.role === 'student' && project?.title?.toLowerCase().includes('graduation')) && (
-            <div className={styles.filterWrapper}>
-              <Select
-                id="dept-filter"
-                placeholder="All Departments"
-                options={[{ value: 'all', label: 'All Departments' }, ...departments.map((d) => ({ value: d.id, label: d.name }))]}
-                value={deptFilter}
-                onChange={(e) => setDeptFilter(e.target.value)}
-              />
-            </div>
-          )}
+          <div className={styles.filterWrapper}>
+            <Select
+              id="dept-filter"
+              placeholder="All Departments"
+              options={[{ value: 'all', label: 'All Departments' }, ...departments.map((d) => ({ value: d.id, label: d.name }))]}
+              value={deptFilter}
+              onChange={(e) => setDeptFilter(e.target.value)}
+            />
+          </div>
           
           <div className={styles.filterWrapper}>
             <Select
@@ -945,9 +944,7 @@ export default function ProjectDetailClient({ id }) {
                 <Users size={32} className={styles.noTeamIcon} />
                 <h3>No teams found</h3>
                 <p>
-                  {user && profile?.role === 'student'
-                    ? `Be the first to create a team for the ${profile.departments?.name || 'CS'} department.`
-                    : 'There are no teams available matching the criteria.'}
+                  There are no teams available matching the criteria.
                 </p>
                 {user ? (
                   !userHasTeam && profile?.role === 'student' && (
@@ -968,10 +965,7 @@ export default function ProjectDetailClient({ id }) {
               <div className={styles.leftPane}>
                 <div className={styles.paneHeader}>
                   <h3>
-                    {user && profile?.role === 'student'
-                      ? `${profile.departments?.name || ''} Teams`
-                      : 'Teams'}
-                    {' '}({filteredTeams.length})
+                    Teams ({filteredTeams.length})
                   </h3>
                   {user && !userHasTeam && profile?.role === 'student' && (
                     <Button onClick={() => setShowCreateTeamModal(true)} icon={Plus} size="sm">
