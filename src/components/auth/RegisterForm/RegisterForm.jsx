@@ -26,6 +26,7 @@ export default function RegisterForm() {
     linkedin_url: '',
     github_url: '',
   });
+  const [countryCode, setCountryCode] = useState('+20');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
@@ -123,19 +124,13 @@ export default function RegisterForm() {
     e.preventDefault();
 
     // Format WhatsApp number before validation & submission
-    let rawPhone = formData.whatsapp_number.trim().replace(/[^\d+]/g, '');
+    let rawPhone = formData.whatsapp_number.trim().replace(/[^\d]/g, '');
     let formattedWhatsapp = rawPhone;
     if (rawPhone) {
-      if (rawPhone.startsWith('+20')) {
-        // already fully formatted
-      } else if (rawPhone.startsWith('20') && rawPhone.length > 10) {
-        formattedWhatsapp = '+' + rawPhone;
-      } else {
-        if (rawPhone.startsWith('0')) {
-          rawPhone = rawPhone.substring(1);
-        }
-        formattedWhatsapp = '+20' + rawPhone;
+      if (rawPhone.startsWith('0')) {
+        rawPhone = rawPhone.substring(1);
       }
+      formattedWhatsapp = countryCode + rawPhone;
     }
 
     // Custom check for department requirement based on academic level (required for Year 3 and above)
@@ -407,10 +402,40 @@ export default function RegisterForm() {
             autoComplete="tel"
             placeholder="1009426569"
             leftElement={
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '16px', lineHeight: 1 }}>🇪🇬</span>
-                <span style={{ color: 'var(--color-text)', opacity: 0.9 }}>+20</span>
-              </span>
+              <select
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                aria-label="Country code"
+                style={{
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                  border: 'none',
+                  background: 'none',
+                  cursor: 'pointer',
+                  fontSize: 'var(--text-sm)',
+                  color: 'var(--color-text)',
+                  fontWeight: 500,
+                  padding: '0 2px 0 0',
+                  outline: 'none',
+                  minWidth: '62px',
+                }}
+              >
+                <option value="+20">🇪🇬 +20</option>
+                <option value="+966">🇸🇦 +966</option>
+                <option value="+971">🇦🇪 +971</option>
+                <option value="+974">🇶🇦 +974</option>
+                <option value="+965">🇰🇼 +965</option>
+                <option value="+973">🇧🇭 +973</option>
+                <option value="+968">🇴🇲 +968</option>
+                <option value="+962">🇯🇴 +962</option>
+                <option value="+961">🇱🇧 +961</option>
+                <option value="+1">🇺🇸 +1</option>
+                <option value="+44">🇬🇧 +44</option>
+                <option value="+49">🇩🇪 +49</option>
+                <option value="+33">🇫🇷 +33</option>
+                <option value="+90">🇹🇷 +90</option>
+                <option value="+91">🇮🇳 +91</option>
+              </select>
             }
           />
           <Select

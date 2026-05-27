@@ -39,15 +39,23 @@ export default function ProfileEditClient() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
+  const [countryCode, setCountryCode] = useState('+20');
 
   useEffect(() => {
     if (!profile) return;
-    let visiblePhone = profile.whatsapp_number || '';
-    if (visiblePhone.startsWith('+20')) {
-      visiblePhone = visiblePhone.substring(3);
-    } else if (visiblePhone.startsWith('20') && visiblePhone.length > 10) {
-      visiblePhone = visiblePhone.substring(2);
+    const phone = profile.whatsapp_number || '';
+    // Detect country code from stored number
+    const knownCodes = ['+966', '+971', '+974', '+965', '+973', '+968', '+962', '+961', '+44', '+49', '+33', '+90', '+91', '+20', '+1'];
+    let detectedCode = '+20';
+    let visiblePhone = phone;
+    for (const code of knownCodes) {
+      if (phone.startsWith(code)) {
+        detectedCode = code;
+        visiblePhone = phone.substring(code.length);
+        break;
+      }
     }
+    setCountryCode(detectedCode);
     Promise.resolve().then(() => {
       setFormData({
         full_name: profile.full_name || '',
@@ -123,19 +131,13 @@ export default function ProfileEditClient() {
 
     try {
       // Format WhatsApp number before validation & submission
-      let rawPhone = formData.whatsapp_number.trim().replace(/[^\d+]/g, '');
+      let rawPhone = formData.whatsapp_number.trim().replace(/[^\d]/g, '');
       let formattedWhatsapp = rawPhone;
       if (rawPhone) {
-        if (rawPhone.startsWith('+20')) {
-          // already fully formatted
-        } else if (rawPhone.startsWith('20') && rawPhone.length > 10) {
-          formattedWhatsapp = '+' + rawPhone;
-        } else {
-          if (rawPhone.startsWith('0')) {
-            rawPhone = rawPhone.substring(1);
-          }
-          formattedWhatsapp = '+20' + rawPhone;
+        if (rawPhone.startsWith('0')) {
+          rawPhone = rawPhone.substring(1);
         }
+        formattedWhatsapp = countryCode + rawPhone;
       }
 
       // Check if selected level requires a department (sort_order >= 3)
@@ -241,10 +243,40 @@ export default function ProfileEditClient() {
               required
               placeholder="1009426569"
               leftElement={
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '16px', lineHeight: 1 }}>🇪🇬</span>
-                  <span style={{ color: 'var(--color-text)', opacity: 0.9 }}>+20</span>
-                </span>
+                <select
+                  value={countryCode}
+                  onChange={(e) => setCountryCode(e.target.value)}
+                  aria-label="Country code"
+                  style={{
+                    appearance: 'none',
+                    WebkitAppearance: 'none',
+                    border: 'none',
+                    background: 'none',
+                    cursor: 'pointer',
+                    fontSize: 'var(--text-sm)',
+                    color: 'var(--color-text)',
+                    fontWeight: 500,
+                    padding: '0 2px 0 0',
+                    outline: 'none',
+                    minWidth: '62px',
+                  }}
+                >
+                  <option value="+20">🇪🇬 +20</option>
+                  <option value="+966">🇸🇦 +966</option>
+                  <option value="+971">🇦🇪 +971</option>
+                  <option value="+974">🇶🇦 +974</option>
+                  <option value="+965">🇰🇼 +965</option>
+                  <option value="+973">🇧🇭 +973</option>
+                  <option value="+968">🇴🇲 +968</option>
+                  <option value="+962">🇯🇴 +962</option>
+                  <option value="+961">🇱🇧 +961</option>
+                  <option value="+1">🇺🇸 +1</option>
+                  <option value="+44">🇬🇧 +44</option>
+                  <option value="+49">🇩🇪 +49</option>
+                  <option value="+33">🇫🇷 +33</option>
+                  <option value="+90">🇹🇷 +90</option>
+                  <option value="+91">🇮🇳 +91</option>
+                </select>
               }
             />
           </div>
