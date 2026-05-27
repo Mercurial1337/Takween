@@ -45,17 +45,17 @@ CREATE TABLE team_merge_requests (
 );
 
 -- Only one pending request per source→target pair
-CREATE UNIQUE INDEX idx_merge_requests_pending
+CREATE UNIQUE INDEX IF NOT EXISTS idx_merge_requests_pending
   ON team_merge_requests (source_team_id, target_team_id)
   WHERE status = 'pending';
 
 -- Also prevent the source team from having more than one outgoing pending request
-CREATE UNIQUE INDEX idx_merge_requests_source_pending
+CREATE UNIQUE INDEX IF NOT EXISTS idx_merge_requests_source_pending
   ON team_merge_requests (source_team_id)
   WHERE status = 'pending';
 
-CREATE INDEX idx_merge_requests_target ON team_merge_requests(target_team_id);
-CREATE INDEX idx_merge_requests_status ON team_merge_requests(status);
+CREATE INDEX IF NOT EXISTS idx_merge_requests_target ON team_merge_requests(target_team_id);
+CREATE INDEX IF NOT EXISTS idx_merge_requests_status ON team_merge_requests(status);
 
 -- ============================================================================
 -- 3. ROW LEVEL SECURITY

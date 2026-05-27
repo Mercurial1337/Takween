@@ -55,8 +55,8 @@ export default function ProfileEditClient() {
         break;
       }
     }
-    setCountryCode(detectedCode);
     Promise.resolve().then(() => {
+      setCountryCode(detectedCode);
       setFormData({
         full_name: profile.full_name || '',
         whatsapp_number: visiblePhone,

@@ -10,9 +10,9 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 
 -- Index for efficient lookups
-CREATE INDEX idx_audit_logs_admin_id ON audit_logs (admin_id);
-CREATE INDEX idx_audit_logs_created_at ON audit_logs (created_at DESC);
-CREATE INDEX idx_audit_logs_entity_type ON audit_logs (entity_type);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_admin_id ON audit_logs (admin_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_entity_type ON audit_logs (entity_type);
 
 -- Enable RLS
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
