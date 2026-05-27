@@ -40,23 +40,29 @@ export default function ProfileEditClient() {
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [countryCode, setCountryCode] = useState('+20');
+  const [showCustomCode, setShowCustomCode] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
     const phone = profile.whatsapp_number || '';
     // Detect country code from stored number
-    const knownCodes = ['+966', '+971', '+974', '+965', '+973', '+968', '+962', '+961', '+44', '+49', '+33', '+90', '+91', '+20', '+1'];
+    const knownCodes = ['+20', '+966', '+967', '+970', '+962', '+971', '+249'];
     let detectedCode = '+20';
     let visiblePhone = phone;
-    for (const code of knownCodes) {
-      if (phone.startsWith(code)) {
-        detectedCode = code;
-        visiblePhone = phone.substring(code.length);
-        break;
-      }
+    
+    const match = phone.match(/^(\+\d{1,4})(.*)$/);
+    if (match) {
+      detectedCode = match[1];
+      visiblePhone = match[2];
     }
+    
+    const isCustom = !knownCodes.includes(detectedCode);
+
     Promise.resolve().then(() => {
       setCountryCode(detectedCode);
+      if (isCustom && detectedCode !== '+20') {
+        setShowCustomCode(true);
+      }
       setFormData({
         full_name: profile.full_name || '',
         whatsapp_number: visiblePhone,
@@ -244,40 +250,66 @@ export default function ProfileEditClient() {
               placeholder="01000666777"
               helperText="E.g, 01........"
               leftElement={
-                <select
-                  value={countryCode}
-                  onChange={(e) => setCountryCode(e.target.value)}
-                  aria-label="Country code"
-                  style={{
-                    appearance: 'none',
-                    WebkitAppearance: 'none',
-                    border: 'none',
-                    background: 'none',
-                    cursor: 'pointer',
-                    fontSize: 'var(--text-sm)',
-                    color: 'var(--color-text)',
-                    fontWeight: 500,
-                    padding: '0 2px 0 0',
-                    outline: 'none',
-                    minWidth: '62px',
-                  }}
-                >
-                  <option value="+20">EG +20</option>
-                  <option value="+966">SA +966</option>
-                  <option value="+971">AE +971</option>
-                  <option value="+974">QA +974</option>
-                  <option value="+965">KW +965</option>
-                  <option value="+973">BH +973</option>
-                  <option value="+968">OM +968</option>
-                  <option value="+962">JO +962</option>
-                  <option value="+961">LB +961</option>
-                  <option value="+1">US +1</option>
-                  <option value="+44">UK +44</option>
-                  <option value="+49">DE +49</option>
-                  <option value="+33">FR +33</option>
-                  <option value="+90">TR +90</option>
-                  <option value="+91">IN +91</option>
-                </select>
+                showCustomCode ? (
+                  <input
+                    type="text"
+                    value={countryCode}
+                    onChange={(e) => setCountryCode(e.target.value)}
+                    style={{
+                      border: 'none',
+                      background: 'none',
+                      fontSize: 'var(--text-sm)',
+                      color: 'var(--color-text)',
+                      fontWeight: 500,
+                      outline: 'none',
+                      width: '65px',
+                      padding: 0
+                    }}
+                    placeholder="+"
+                    autoFocus
+                    onBlur={(e) => {
+                      if (!e.target.value || e.target.value === '+') {
+                        setShowCustomCode(false);
+                        setCountryCode('+20');
+                      }
+                    }}
+                  />
+                ) : (
+                  <select
+                    value={countryCode}
+                    onChange={(e) => {
+                      if (e.target.value === 'other') {
+                        setShowCustomCode(true);
+                        setCountryCode('+');
+                      } else {
+                        setCountryCode(e.target.value);
+                      }
+                    }}
+                    aria-label="Country code"
+                    style={{
+                      appearance: 'none',
+                      WebkitAppearance: 'none',
+                      border: 'none',
+                      background: 'none',
+                      cursor: 'pointer',
+                      fontSize: 'var(--text-sm)',
+                      color: 'var(--color-text)',
+                      fontWeight: 500,
+                      padding: '0 2px 0 0',
+                      outline: 'none',
+                      minWidth: '62px',
+                    }}
+                  >
+                    <option value="+20">🇪🇬 EG +20</option>
+                    <option value="+966">🇸🇦 SA +966</option>
+                    <option value="+967">🇾🇪 YE +967</option>
+                    <option value="+970">🇵🇸 PS +970</option>
+                    <option value="+962">🇯🇴 JO +962</option>
+                    <option value="+971">🇦🇪 AE +971</option>
+                    <option value="+249">🇸🇩 SD +249</option>
+                    <option value="other">🌍 Other</option>
+                  </select>
+                )
               }
             />
           </div>

@@ -27,6 +27,7 @@ export default function RegisterForm() {
     github_url: '',
   });
   const [countryCode, setCountryCode] = useState('+20');
+  const [showCustomCode, setShowCustomCode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
@@ -402,41 +403,67 @@ export default function RegisterForm() {
             autoComplete="tel"
             placeholder="01000666777"
             leftElement={
-              <select
-                value={countryCode}
-                onChange={(e) => setCountryCode(e.target.value)}
-                aria-label="Country code"
-                style={{
-                  appearance: 'none',
-                  WebkitAppearance: 'none',
-                  border: 'none',
-                  background: 'none',
-                  cursor: 'pointer',
-                  fontSize: 'var(--text-sm)',
-                  color: 'var(--color-text)',
-                  fontWeight: 500,
-                  padding: '0 2px 0 0',
-                  outline: 'none',
-                  minWidth: '62px',
-                }}
-              >
-                <option value="+20">EG +20</option>
-                <option value="+966">SA +966</option>
-                <option value="+971">AE +971</option>
-                <option value="+974">QA +974</option>
-                <option value="+965">KW +965</option>
-                <option value="+973">BH +973</option>
-                <option value="+968">OM +968</option>
-                <option value="+962">JO +962</option>
-                <option value="+961">LB +961</option>
-                <option value="+1">US +1</option>
-                <option value="+44">UK +44</option>
-                <option value="+49">DE +49</option>
-                <option value="+33">FR +33</option>
-                <option value="+90">TR +90</option>
-                <option value="+91">IN +91</option>
-              </select>
-            }
+                showCustomCode ? (
+                  <input
+                    type="text"
+                    value={countryCode}
+                    onChange={(e) => setCountryCode(e.target.value)}
+                    style={{
+                      border: 'none',
+                      background: 'none',
+                      fontSize: 'var(--text-sm)',
+                      color: 'var(--color-text)',
+                      fontWeight: 500,
+                      outline: 'none',
+                      width: '65px',
+                      padding: 0
+                    }}
+                    placeholder="+"
+                    autoFocus
+                    onBlur={(e) => {
+                      if (!e.target.value || e.target.value === '+') {
+                        setShowCustomCode(false);
+                        setCountryCode('+20');
+                      }
+                    }}
+                  />
+                ) : (
+                  <select
+                    value={countryCode}
+                    onChange={(e) => {
+                      if (e.target.value === 'other') {
+                        setShowCustomCode(true);
+                        setCountryCode('+');
+                      } else {
+                        setCountryCode(e.target.value);
+                      }
+                    }}
+                    aria-label="Country code"
+                    style={{
+                      appearance: 'none',
+                      WebkitAppearance: 'none',
+                      border: 'none',
+                      background: 'none',
+                      cursor: 'pointer',
+                      fontSize: 'var(--text-sm)',
+                      color: 'var(--color-text)',
+                      fontWeight: 500,
+                      padding: '0 2px 0 0',
+                      outline: 'none',
+                      minWidth: '62px',
+                    }}
+                  >
+                    <option value="+20">🇪🇬 EG +20</option>
+                    <option value="+966">🇸🇦 SA +966</option>
+                    <option value="+967">🇾🇪 YE +967</option>
+                    <option value="+970">🇵🇸 PS +970</option>
+                    <option value="+962">🇯🇴 JO +962</option>
+                    <option value="+971">🇦🇪 AE +971</option>
+                    <option value="+249">🇸🇩 SD +249</option>
+                    <option value="other">🌍 Other</option>
+                  </select>
+                )
+              }
           />
           <Select
             id="reg-level"
