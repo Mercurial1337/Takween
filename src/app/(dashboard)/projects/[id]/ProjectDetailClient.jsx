@@ -21,6 +21,71 @@ import Skeleton from '@/components/ui/Skeleton/Skeleton';
 import styles from './page.module.css';
 import Link from 'next/link';
 
+const ensureAbsoluteUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `https://${url}`;
+};
+
+function CountryCodeSelector({ countryCode, setCountryCode, showCustomCode, setShowCustomCode }) {
+  return showCustomCode ? (
+    <input
+      type="text"
+      value={countryCode}
+      onChange={(e) => setCountryCode(e.target.value)}
+      style={{
+        border: 'none',
+        background: 'none',
+        fontSize: 'var(--text-sm)',
+        color: 'var(--color-text)',
+        fontWeight: 500,
+        outline: 'none',
+        width: '65px',
+        padding: 0
+      }}
+      placeholder="+"
+      autoFocus
+      onBlur={(e) => {
+        if (!e.target.value || e.target.value === '+') {
+          setShowCustomCode(false);
+          setCountryCode('+20');
+        }
+      }}
+    />
+  ) : (
+    <select
+      value={countryCode}
+      onChange={(e) => {
+        if (e.target.value === 'other') {
+          setShowCustomCode(true);
+          setCountryCode('+');
+        } else {
+          setCountryCode(e.target.value);
+        }
+      }}
+      aria-label="Country code"
+      style={{
+        appearance: 'none',
+        WebkitAppearance: 'none',
+        border: 'none',
+        background: 'none',
+        cursor: 'pointer',
+        fontSize: 'var(--text-sm)',
+        color: 'var(--color-text)',
+        fontWeight: 500,
+        outline: 'none',
+        paddingRight: 'var(--space-md)'
+      }}
+    >
+      <option value="+20">EG (+20)</option>
+      <option value="+966">SA (+966)</option>
+      <option value="+971">AE (+971)</option>
+      <option value="+965">KW (+965)</option>
+      <option value="other">Other...</option>
+    </select>
+  );
+}
+
 export default function ProjectDetailClient({ id }) {
   const { user, profile } = useAuth();
   const { showToast } = useToast();
@@ -60,14 +125,18 @@ export default function ProjectDetailClient({ id }) {
   const [addMemberEmail, setAddMemberEmail] = useState('');
   const [manualName, setManualName] = useState('');
   const [manualWhatsapp, setManualWhatsapp] = useState('');
+  const [manualCountryCode, setManualCountryCode] = useState('+20');
+  const [showManualCustomCode, setShowManualCustomCode] = useState(false);
   const [manualLinkedin, setManualLinkedin] = useState('');
   const [manualGithub, setManualGithub] = useState('');
 
   // Edit manual member state
   const [showEditManualMemberModal, setShowEditManualMemberModal] = useState(false);
-  const [editManualId, setEditManualId] = useState('');
+  const [editManualId, setEditManualId] = useState(null);
   const [editManualName, setEditManualName] = useState('');
   const [editManualWhatsapp, setEditManualWhatsapp] = useState('');
+  const [editManualCountryCode, setEditManualCountryCode] = useState('+20');
+  const [showEditManualCustomCode, setShowEditManualCustomCode] = useState(false);
   const [editManualLinkedin, setEditManualLinkedin] = useState('');
   const [editManualGithub, setEditManualGithub] = useState('');
   const [editManualNotes, setEditManualNotes] = useState('');
@@ -571,7 +640,7 @@ export default function ProjectDetailClient({ id }) {
         const { error } = await supabase.from('manual_members').insert({
           team_id: selectedTeam.id,
           full_name: manualName,
-          whatsapp_number: manualWhatsapp || null,
+          whatsapp_number: manualWhatsapp ? (manualCountryCode + manualWhatsapp.replace(/\D/g, '')) : null,
           linkedin_url: manualLinkedin || null,
           github_url: manualGithub || null,
           added_by: user.id,
@@ -585,6 +654,8 @@ export default function ProjectDetailClient({ id }) {
       setAddMemberEmail('');
       setManualName('');
       setManualWhatsapp('');
+      setManualCountryCode('+20');
+      setShowManualCustomCode(false);
       setManualLinkedin('');
       setManualGithub('');
       await fetchProject();
@@ -623,7 +694,27 @@ export default function ProjectDetailClient({ id }) {
   const openEditManualMemberModal = (member) => {
     setEditManualId(member.id);
     setEditManualName(member.full_name || '');
-    setEditManualWhatsapp(member.whatsapp_number || '');
+
+    let wNumber = member.whatsapp_number || '';
+    let wCode = '+20';
+    if (wNumber.startsWith('+')) {
+       if (wNumber.startsWith('+20')) { wCode = '+20'; wNumber = wNumber.slice(3); }
+       else if (wNumber.startsWith('+966')) { wCode = '+966'; wNumber = wNumber.slice(4); }
+       else if (wNumber.startsWith('+971')) { wCode = '+971'; wNumber = wNumber.slice(4); }
+       else if (wNumber.startsWith('+965')) { wCode = '+965'; wNumber = wNumber.slice(4); }
+       else {
+          const match = wNumber.match(/^(\+\d{1,4})(.*)$/);
+          if (match) {
+             wCode = match[1];
+             wNumber = match[2];
+          }
+       }
+    }
+
+    setEditManualWhatsapp(wNumber);
+    setEditManualCountryCode(wCode);
+    setShowEditManualCustomCode(!['+20', '+966', '+971', '+965'].includes(wCode));
+
     setEditManualLinkedin(member.linkedin_url || '');
     setEditManualGithub(member.github_url || '');
     setEditManualNotes(member.notes || '');
@@ -638,7 +729,7 @@ export default function ProjectDetailClient({ id }) {
         .from('manual_members')
         .update({
           full_name: editManualName,
-          whatsapp_number: editManualWhatsapp || null,
+          whatsapp_number: editManualWhatsapp ? (editManualCountryCode + editManualWhatsapp.replace(/\D/g, '')) : null,
           linkedin_url: editManualLinkedin || null,
           github_url: editManualGithub || null,
           notes: editManualNotes || null
@@ -1269,7 +1360,7 @@ export default function ProjectDetailClient({ id }) {
                                   )}
                                   {canViewFullDetails && memberProfile?.github_url && (
                                     <a
-                                      href={memberProfile.github_url}
+                                      href={ensureAbsoluteUrl(memberProfile.github_url)}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className={styles.socialIcon}
@@ -1281,7 +1372,7 @@ export default function ProjectDetailClient({ id }) {
                                   )}
                                   {canViewFullDetails && memberProfile?.linkedin_url && (
                                     <a
-                                      href={memberProfile.linkedin_url}
+                                      href={ensureAbsoluteUrl(memberProfile.linkedin_url)}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className={`${styles.socialIcon} ${styles.socialIconLinkedin}`}
@@ -1356,7 +1447,7 @@ export default function ProjectDetailClient({ id }) {
                                 <span className={styles.memberName}>{m.full_name}</span>
                                 {m.github_url && (
                                   <a
-                                    href={m.github_url}
+                                    href={ensureAbsoluteUrl(m.github_url)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className={styles.socialIcon}
@@ -1368,7 +1459,7 @@ export default function ProjectDetailClient({ id }) {
                                 )}
                                 {m.linkedin_url && (
                                   <a
-                                    href={m.linkedin_url}
+                                    href={ensureAbsoluteUrl(m.linkedin_url)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className={`${styles.socialIcon} ${styles.socialIconLinkedin}`}
@@ -1526,7 +1617,7 @@ export default function ProjectDetailClient({ id }) {
                         <div className={styles.seekerSocialLinks}>
                           {seeker.profiles?.github_url && (
                             <a
-                              href={seeker.profiles.github_url}
+                              href={ensureAbsoluteUrl(seeker.profiles.github_url)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className={styles.socialIcon}
@@ -1538,7 +1629,7 @@ export default function ProjectDetailClient({ id }) {
                           )}
                           {seeker.profiles?.linkedin_url && (
                             <a
-                              href={seeker.profiles.linkedin_url}
+                              href={ensureAbsoluteUrl(seeker.profiles.linkedin_url)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className={`${styles.socialIcon} ${styles.socialIconLinkedin}`}
@@ -1719,7 +1810,16 @@ export default function ProjectDetailClient({ id }) {
                 id="manual-whatsapp"
                 label="WhatsApp Number (optional)"
                 value={manualWhatsapp}
-                onChange={(e) => setManualWhatsapp(e.target.value)}
+                onChange={(e) => setManualWhatsapp(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                placeholder="01000666777"
+                leftElement={
+                  <CountryCodeSelector
+                    countryCode={manualCountryCode}
+                    setCountryCode={setManualCountryCode}
+                    showCustomCode={showManualCustomCode}
+                    setShowCustomCode={setShowManualCustomCode}
+                  />
+                }
               />
               <Input
                 id="manual-linkedin"
@@ -1961,7 +2061,16 @@ export default function ProjectDetailClient({ id }) {
                 id="edit-manual-whatsapp"
                 label="WhatsApp Number (optional)"
                 value={editManualWhatsapp}
-                onChange={(e) => setEditManualWhatsapp(e.target.value)}
+                onChange={(e) => setEditManualWhatsapp(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                placeholder="01000666777"
+                leftElement={
+                  <CountryCodeSelector
+                    countryCode={editManualCountryCode}
+                    setCountryCode={setEditManualCountryCode}
+                    showCustomCode={showEditManualCustomCode}
+                    setShowCustomCode={setShowEditManualCustomCode}
+                  />
+                }
               />
               <Input
                 id="edit-manual-linkedin"
