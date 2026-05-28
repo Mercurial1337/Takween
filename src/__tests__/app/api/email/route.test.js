@@ -126,7 +126,7 @@ describe('POST /api/email', () => {
     expect(mockSendMail).toHaveBeenCalledTimes(1);
 
     const sentArgs = mockSendMail.mock.calls[0][0];
-    expect(sentArgs.subject).toBe('Team Invitation: Graduation Project');
+    expect(sentArgs.subject).toBe('Invitation to join Graduation Project');
     expect(sentArgs.html).toContain('You\'ve Been Invited!');
     expect(sentArgs.html).toContain('Team Owner');
     expect(sentArgs.html).toContain('Graduation Project');
@@ -146,7 +146,7 @@ describe('POST /api/email', () => {
     expect(mockSendMail).toHaveBeenCalledTimes(1);
 
     const sentArgs = mockSendMail.mock.calls[0][0];
-    expect(sentArgs.subject).toBe('Invitation Accepted: Graduation Project');
+    expect(sentArgs.subject).toBe('Your invitation for Graduation Project was accepted');
     expect(sentArgs.html).toContain('Invitation Accepted!');
     expect(sentArgs.html).toContain('Student');
     expect(NextResponse.json).toHaveBeenCalledWith({ success: true, messageId: 'test-message-id' });
@@ -164,7 +164,7 @@ describe('POST /api/email', () => {
     expect(mockSendMail).toHaveBeenCalledTimes(1);
 
     const sentArgs = mockSendMail.mock.calls[0][0];
-    expect(sentArgs.subject).toBe('Invitation Update: Graduation Project');
+    expect(sentArgs.subject).toBe('Update on your invitation for Graduation Project');
     expect(sentArgs.html).toContain('Invitation Update');
     expect(sentArgs.html).toContain('declined your invitation');
     expect(sentArgs.html).toContain('Student Directory');
@@ -185,7 +185,7 @@ describe('POST /api/email', () => {
     const sentArgs = mockSendMail.mock.calls[0][0];
     // When no message is passed, the template should not render the quoted message
     expect(sentArgs.html).not.toContain('"message-box"><p>');
-    expect(sentArgs.subject).toBe('Team Invitation: Test Project');
+    expect(sentArgs.subject).toBe('Invitation to join Test Project');
     expect(NextResponse.json).toHaveBeenCalledWith({ success: true, messageId: 'test-message-id' });
   });
 });
