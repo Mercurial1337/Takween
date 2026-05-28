@@ -134,6 +134,29 @@ export default function ProjectDetailClient({ id }) {
     return result;
   }, [teams, project, user, profile, deptFilter, skillFilter, sortFilter, allMembers, allManualMembers]);
 
+  const filteredSeekers = useMemo(() => {
+    let result = projectSeekers;
+
+    // 1. Department Filtering
+    if (deptFilter && deptFilter !== 'all') {
+      result = result.filter(s => s.profiles?.department_id === deptFilter);
+    }
+
+    // 2. Skills Filtering
+    if (skillFilter && skillFilter !== 'all') {
+      result = result.filter(s => 
+        s.profiles?.profile_skills?.some(ps => ps.skill_id === skillFilter)
+      );
+    }
+
+    // 3. Sorting (newest first is default)
+    result = [...result].sort((a, b) => {
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
+
+    return result;
+  }, [projectSeekers, deptFilter, skillFilter, sortFilter]);
+
   const selectedTeam = useMemo(() => {
     if (selectedTeamId) {
       return teams.find(t => t.id === selectedTeamId) || filteredTeams[0] || null;
@@ -237,10 +260,9 @@ export default function ProjectDetailClient({ id }) {
         if (teamsData.length > 0) {
           const teamIds = teamsData.map(t => t.id);
 
-          // Get members
           const { data: memberData } = await supabase
             .from('team_members')
-            .select('*, profiles:user_id (id, full_name, avatar_url, level_id, levels:level_id (name), linkedin_url, github_url, whatsapp_number, email, profile_skills (skill_id, skills (name)))')
+            .select('*, profiles:user_id (id, full_name, avatar_url, level_id, levels:level_id (name), department_id, departments:department_id (name), linkedin_url, github_url, whatsapp_number, email, profile_skills (skill_id, skills (name)))')
             .in('team_id', teamIds)
             .order('joined_at');
           if (memberData) setAllMembers(memberData);
@@ -291,7 +313,7 @@ export default function ProjectDetailClient({ id }) {
       // Get project seekers (available students)
       const { data: seekersData } = await supabase
         .from('project_seekers')
-        .select('*, profiles:user_id (id, full_name, avatar_url, email, level_id, levels:level_id (name), linkedin_url, github_url, whatsapp_number, profile_skills (skill_id, skills (name)))')
+        .select('*, profiles:user_id (id, full_name, avatar_url, email, level_id, levels:level_id (name), department_id, departments:department_id (name), linkedin_url, github_url, whatsapp_number, profile_skills (skill_id, skills (name)))')
         .eq('project_id', id)
         .order('created_at', { ascending: false });
       if (seekersData) setProjectSeekers(seekersData);
@@ -956,7 +978,7 @@ export default function ProjectDetailClient({ id }) {
             onClick={() => setActiveTab('students')}
           >
             <UserPlus size={16} /> Available Students
-            <Badge variant="default" size="sm">{projectSeekers.length}</Badge>
+            <Badge variant="default" size="sm">{filteredSeekers.length}</Badge>
           </button>
         </div>
 
@@ -1259,8 +1281,10 @@ export default function ProjectDetailClient({ id }) {
                                     </a>
                                   )}
                                 </div>
-                                {canViewFullDetails && memberProfile?.levels?.name && (
-                                  <p className={styles.memberLevel}>{memberProfile.levels.name}</p>
+                                {canViewFullDetails && (memberProfile?.levels?.name || memberProfile?.departments?.name) && (
+                                  <p className={styles.memberLevel}>
+                                    {[memberProfile?.levels?.name, memberProfile?.departments?.name].filter(Boolean).join(', ')}
+                                  </p>
                                 )}
                                 {canViewFullDetails && memberProfile?.profile_skills?.length > 0 && (
                                   <div className={styles.memberSkills}>
@@ -1419,7 +1443,7 @@ export default function ProjectDetailClient({ id }) {
 
       {activeTab === 'students' && (
         <div className={styles.studentsSection}>
-          {projectSeekers.length === 0 ? (
+          {filteredSeekers.length === 0 ? (
             <Card className={styles.noTeamCard}>
               <div className={styles.noTeamContent}>
                 <UserPlus size={32} className={styles.noTeamIcon} />
@@ -1429,7 +1453,7 @@ export default function ProjectDetailClient({ id }) {
             </Card>
           ) : (
             <div className={styles.seekersGrid}>
-              {projectSeekers.map((seeker) => (
+              {filteredSeekers.map((seeker) => (
                 <Card key={seeker.id} className={styles.seekerCard}>
                   <div className={styles.seekerHeader}>
                     <Link href={`/profile/${seeker.user_id}`} className={styles.seekerLink}>
@@ -1439,8 +1463,10 @@ export default function ProjectDetailClient({ id }) {
                       <Link href={`/profile/${seeker.user_id}`} className={styles.seekerLinkName}>
                         <h4 className={styles.seekerName}>{seeker.profiles?.full_name}</h4>
                       </Link>
-                      {seeker.profiles?.levels?.name && (
-                        <p className={styles.seekerLevel}>{seeker.profiles.levels.name}</p>
+                      {(seeker.profiles?.levels?.name || seeker.profiles?.departments?.name) && (
+                        <p className={styles.seekerLevel}>
+                          {[seeker.profiles?.levels?.name, seeker.profiles?.departments?.name].filter(Boolean).join(', ')}
+                        </p>
                       )}
                       {(seeker.profiles?.github_url || seeker.profiles?.linkedin_url || seeker.profiles?.whatsapp_number) && (
                         <div className={styles.seekerSocialLinks}>
