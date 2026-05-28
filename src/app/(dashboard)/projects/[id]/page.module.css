@@ -506,85 +506,6 @@
     padding-right: 0;
   }
 
-  /* Bottom Sheet Styles */
-  .rightPane {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
-    background-color: var(--color-surface);
-    border-top-left-radius: var(--radius-2xl);
-    border-top-right-radius: var(--radius-2xl);
-    max-height: 85vh;
-    overflow-y: auto;
-    box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
-    transform: translateY(100%);
-    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
-    padding: 0;
-  }
-
-  .rightPane.mobileOpen {
-    transform: translateY(0);
-  }
-
-  .mobileBackdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 99;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.35s ease;
-    backdrop-filter: blur(2px);
-  }
-
-  .mobileBackdrop.open {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  .teamDetailsCard {
-    padding: var(--space-xl) var(--space-md) var(--space-2xl) var(--space-md);
-    border: none;
-    box-shadow: none;
-    border-radius: 0;
-  }
-
-  .noTeamSelectedCard {
-    min-height: 200px;
-    padding: var(--space-xl) var(--space-md);
-    border: none;
-  }
-}
-
-/* Hide mobile handles on desktop */
-.mobileCloseHandle {
-  display: none;
-}
-
-@media (max-width: 968px) {
-  .mobileCloseHandle {
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: var(--space-sm);
-  }
-
-  .mobileCloseBtn {
-    background: var(--color-neutral);
-    border: none;
-    border-radius: var(--radius-full);
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-text-muted);
-    cursor: pointer;
-  }
 }
 
 @media (max-width: 640px) {
@@ -1078,4 +999,84 @@
 .helperText {
   font-size: var(--text-xs);
   color: var(--color-text-muted);
+}
+
+/* Hide mobile handles on desktop */
+.mobileCloseHandle {
+  display: none;
+}
+
+@media (max-width: 968px) {
+  /* Bottom Sheet Styles */
+  .rightPane {
+    position: fixed !important;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background-color: var(--color-surface);
+    border-top-left-radius: var(--radius-2xl);
+    border-top-right-radius: var(--radius-2xl);
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.15);
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+    padding: 0;
+  }
+
+  .rightPane.mobileOpen {
+    transform: translateY(0);
+  }
+
+  .mobileBackdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 99;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+    backdrop-filter: blur(2px);
+  }
+
+  .mobileBackdrop.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .teamDetailsCard {
+    padding: var(--space-xl) var(--space-md) var(--space-2xl) var(--space-md);
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .noTeamSelectedCard {
+    min-height: 200px;
+    padding: var(--space-xl) var(--space-md);
+    border: none;
+  }
+
+  .mobileCloseHandle {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: var(--space-sm);
+  }
+
+  .mobileCloseBtn {
+    background: var(--color-neutral);
+    border: none;
+    border-radius: var(--radius-full);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+    cursor: pointer;
+  }
 }
