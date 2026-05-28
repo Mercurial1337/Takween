@@ -221,13 +221,19 @@ export default function RegisterForm() {
       const { error: profileError } = await supabase.from('profiles').upsert({
         id: userId,
         full_name: dataToValidate.full_name,
-        email: dataToValidate.email,
-        whatsapp_number: formattedWhatsapp,
         level_id: dataToValidate.level_id || null,
         department_id: dataToValidate.department_id || null,
         linkedin_url: dataToValidate.linkedin_url || null,
         github_url: dataToValidate.github_url || null,
       });
+
+      if (!profileError) {
+        await supabase.from('contact_info').upsert({
+          id: userId,
+          email: dataToValidate.email,
+          whatsapp_number: formattedWhatsapp,
+        });
+      }
 
       if (profileError) {
         console.error('Profile creation error:', profileError);

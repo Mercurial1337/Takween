@@ -329,7 +329,7 @@ export default function ProjectDetailClient({ id }) {
         .from('teams')
         .select(`
           *,
-          profiles:owner_id (id, full_name, avatar_url, whatsapp_number, email),
+          profiles:owner_id (id, full_name, avatar_url),
           departments:department_id (id, name)
         `)
         .eq('project_id', id)
@@ -343,7 +343,7 @@ export default function ProjectDetailClient({ id }) {
 
           const { data: memberData } = await supabase
             .from('team_members')
-            .select('*, profiles:user_id (id, full_name, avatar_url, level_id, levels:level_id (name), department_id, departments:department_id (name), linkedin_url, github_url, whatsapp_number, email, profile_skills (skill_id, skills (name)))')
+            .select('*, profiles:user_id (id, full_name, avatar_url, level_id, levels:level_id (name), department_id, departments:department_id (name), linkedin_url, github_url, profile_skills (skill_id, skills (name)))')
             .in('team_id', teamIds)
             .order('joined_at');
           if (memberData) setAllMembers(memberData);
@@ -361,7 +361,7 @@ export default function ProjectDetailClient({ id }) {
             if (ownedTeamIds.length > 0) {
               const { data: reqData } = await supabase
                 .from('join_requests')
-                .select('*, profiles:user_id (id, full_name, avatar_url, email)')
+                .select('*, profiles:user_id (id, full_name, avatar_url)')
                 .in('team_id', ownedTeamIds)
                 .eq('status', 'pending');
               if (reqData) setAllRequests(reqData);
@@ -406,7 +406,7 @@ export default function ProjectDetailClient({ id }) {
       // Get project seekers (available students)
       const { data: seekersData } = await supabase
         .from('project_seekers')
-        .select('*, profiles:user_id (id, full_name, avatar_url, email, level_id, levels:level_id (name), department_id, departments:department_id (name), linkedin_url, github_url, whatsapp_number, profile_skills (skill_id, skills (name)))')
+        .select('*, profiles:user_id (id, full_name, avatar_url, level_id, levels:level_id (name), department_id, departments:department_id (name), linkedin_url, github_url, profile_skills (skill_id, skills (name)))')
         .eq('project_id', id)
         .order('created_at', { ascending: false });
       if (seekersData) setProjectSeekers(seekersData);
@@ -528,7 +528,7 @@ export default function ProjectDetailClient({ id }) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             type: 'request_received',
-            recipientEmail: selectedTeam.profiles?.email,
+            recipientId: selectedTeam.owner_id,
             recipientName: selectedTeam.profiles?.full_name,
             actorName: profile?.full_name,
             projectName: project.title,
@@ -579,14 +579,14 @@ export default function ProjectDetailClient({ id }) {
       // Send email to requester via API
       try {
         const reqObj = allRequests.find(r => r.id === requestId);
-        if (reqObj && reqObj.profiles?.email) {
+        if (reqObj) {
           await fetch('/api/email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               type: action === 'accepted' ? 'request_accepted' : 'request_rejected',
-              recipientEmail: reqObj.profiles.email,
-              recipientName: reqObj.profiles.full_name,
+              recipientId: requestUserId,
+              recipientName: reqObj.profiles?.full_name,
               actorName: profile?.full_name,
               projectName: project.title,
               message: null // ProjectDetailClient currently has no reply message UI
@@ -907,7 +907,7 @@ export default function ProjectDetailClient({ id }) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             type: 'merge_received',
-            recipientEmail: mergeTargetTeam.profiles?.email,
+            recipientId: mergeTargetTeam.owner_id,
             recipientName: mergeTargetTeam.profiles?.full_name,
             actorName: profile?.full_name,
             projectName: project.title,
@@ -1004,7 +1004,7 @@ export default function ProjectDetailClient({ id }) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             type: 'invite_received',
-            recipientEmail: inviteTarget.profiles?.email,
+            recipientId: inviteTarget.user_id,
             recipientName: inviteTarget.profiles?.full_name,
             actorName: profile?.full_name,
             projectName: project.title,

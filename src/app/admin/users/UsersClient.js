@@ -61,7 +61,7 @@ export default function UsersClient() {
       const to = from + PAGE_SIZE - 1;
 
       let query = supabase
-        .from('profiles')
+        .from('admin_users_view')
         .select('id, full_name, email, role, avatar_url, whatsapp_number, created_at', { count: 'exact' })
         .order('created_at', { ascending: false });
 
@@ -105,7 +105,7 @@ export default function UsersClient() {
 
   const handleExport = async () => {
     try {
-      let query = supabase.from('profiles').select('full_name, email, role, whatsapp_number, created_at').order('created_at', { ascending: false });
+      let query = supabase.from('admin_users_view').select('full_name, email, role, whatsapp_number, created_at').order('created_at', { ascending: false });
       if (searchDebounced) {
         query = query.or(`full_name.ilike.%${searchDebounced}%,email.ilike.%${searchDebounced}%`);
       }

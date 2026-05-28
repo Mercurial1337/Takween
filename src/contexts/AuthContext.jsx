@@ -22,27 +22,36 @@ export function AuthProvider({ children }) {
 
     const { data: fetchResult, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select('*, contact_info(email, whatsapp_number)')
       .eq('id', currentUser.id)
 
     if (error) {
       console.error('Error fetching profile:', error.message || error)
     }
 
-    const data = fetchResult && fetchResult.length > 0 ? fetchResult[0] : null;
+    let data = fetchResult && fetchResult.length > 0 ? fetchResult[0] : null;
+    if (data && data.contact_info) {
+      data.email = data.contact_info.email;
+      data.whatsapp_number = data.contact_info.whatsapp_number;
+      delete data.contact_info;
+    }
 
     if (!data && currentUser.user_metadata && currentUser.user_metadata.full_name) {
       const meta = currentUser.user_metadata;
       const newProfile = {
         id: currentUser.id,
         full_name: meta.full_name || currentUser.email?.split('@')[0] || 'Student',
-        email: currentUser.email,
-        whatsapp_number: meta.whatsapp_number || '',
         level_id: meta.level_id || null,
         department_id: meta.department_id || null,
         linkedin_url: meta.linkedin_url || null,
         github_url: meta.github_url || null,
         role: 'student'
+      };
+
+      const newContact = {
+        id: currentUser.id,
+        email: currentUser.email,
+        whatsapp_number: meta.whatsapp_number || '',
       };
 
       const { error: upsertError } = await supabase
@@ -52,6 +61,8 @@ export function AuthProvider({ children }) {
       if (upsertError) {
         console.error('Error auto-creating profile:', upsertError);
       } else {
+        await supabase.from('contact_info').upsert(newContact);
+
         // Attempt to restore skills
         if (meta.skills && Array.isArray(meta.skills) && meta.skills.length > 0) {
           try {

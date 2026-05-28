@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import { createClient } from '@supabase/supabase-js';
 import { getRateLimiter, getClientIp } from '@/lib/rateLimit';
 
 const emailLimiter = getRateLimiter('email', { windowMs: 60_000, maxRequests: 5 });
@@ -23,11 +24,34 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { type, recipientEmail, recipientName, actorName, projectName, message, teamName, sourceMemberCount } = body;
+    const { type, recipientId, recipientName, actorName, projectName, message, teamName, sourceMemberCount } = body;
 
-    if (!recipientEmail) {
-      return NextResponse.json({ error: 'Recipient email is required' }, { status: 400 });
+    if (!recipientId) {
+      return NextResponse.json({ error: 'Recipient ID is required' }, { status: 400 });
     }
+
+    // Fetch recipient email securely using service role key
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.warn('Supabase credentials missing. Cannot fetch email.');
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: contactData, error: contactErr } = await supabaseAdmin
+      .from('contact_info')
+      .select('email')
+      .eq('id', recipientId)
+      .single();
+
+    if (contactErr || !contactData?.email) {
+      console.error('Failed to fetch recipient email:', contactErr);
+      return NextResponse.json({ error: 'Recipient email not found' }, { status: 404 });
+    }
+
+    const recipientEmail = contactData.email;
 
     if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
       console.warn('SMTP not configured. Simulated email:', body);
