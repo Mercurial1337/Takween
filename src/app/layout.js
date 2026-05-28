@@ -29,10 +29,25 @@ export const metadata = {
     "student collaboration",
   ],
   openGraph: {
-    title: "Takween — Find Your Team",
+    title: "Takween | Find Your Team",
     description:
       "Takween helps university students find teammates for course and graduation projects.",
     type: "website",
+    images: [
+      {
+        url: "/link-preview.jpg",
+        width: 1024,
+        height: 559,
+        alt: "Takween Link Preview",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Takween | Find Your Team",
+    description:
+      "Takween helps university students find teammates for course and graduation projects.",
+    images: ["/link-preview.jpg"],
   },
 };
 
