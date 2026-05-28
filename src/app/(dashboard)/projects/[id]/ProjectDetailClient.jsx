@@ -60,12 +60,16 @@ export default function ProjectDetailClient({ id }) {
   const [addMemberEmail, setAddMemberEmail] = useState('');
   const [manualName, setManualName] = useState('');
   const [manualWhatsapp, setManualWhatsapp] = useState('');
+  const [manualLinkedin, setManualLinkedin] = useState('');
+  const [manualGithub, setManualGithub] = useState('');
 
   // Edit manual member state
   const [showEditManualMemberModal, setShowEditManualMemberModal] = useState(false);
   const [editManualId, setEditManualId] = useState('');
   const [editManualName, setEditManualName] = useState('');
   const [editManualWhatsapp, setEditManualWhatsapp] = useState('');
+  const [editManualLinkedin, setEditManualLinkedin] = useState('');
+  const [editManualGithub, setEditManualGithub] = useState('');
   const [editManualNotes, setEditManualNotes] = useState('');
 
   // Merge request state
@@ -568,6 +572,8 @@ export default function ProjectDetailClient({ id }) {
           team_id: selectedTeam.id,
           full_name: manualName,
           whatsapp_number: manualWhatsapp || null,
+          linkedin_url: manualLinkedin || null,
+          github_url: manualGithub || null,
           added_by: user.id,
         });
         if (error) throw error;
@@ -579,6 +585,8 @@ export default function ProjectDetailClient({ id }) {
       setAddMemberEmail('');
       setManualName('');
       setManualWhatsapp('');
+      setManualLinkedin('');
+      setManualGithub('');
       await fetchProject();
     } catch (err) {
       showToast({ title: 'Cannot add member', message: err.message, variant: 'error' });
@@ -616,6 +624,8 @@ export default function ProjectDetailClient({ id }) {
     setEditManualId(member.id);
     setEditManualName(member.full_name || '');
     setEditManualWhatsapp(member.whatsapp_number || '');
+    setEditManualLinkedin(member.linkedin_url || '');
+    setEditManualGithub(member.github_url || '');
     setEditManualNotes(member.notes || '');
     setShowEditManualMemberModal(true);
   };
@@ -629,6 +639,8 @@ export default function ProjectDetailClient({ id }) {
         .update({
           full_name: editManualName,
           whatsapp_number: editManualWhatsapp || null,
+          linkedin_url: editManualLinkedin || null,
+          github_url: editManualGithub || null,
           notes: editManualNotes || null
         })
         .eq('id', editManualId);
@@ -1342,6 +1354,30 @@ export default function ProjectDetailClient({ id }) {
                             <div>
                               <div className={styles.memberNameRow}>
                                 <span className={styles.memberName}>{m.full_name}</span>
+                                {m.github_url && (
+                                  <a
+                                    href={m.github_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={styles.socialIcon}
+                                    title="GitHub"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Github size={14} />
+                                  </a>
+                                )}
+                                {m.linkedin_url && (
+                                  <a
+                                    href={m.linkedin_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`${styles.socialIcon} ${styles.socialIconLinkedin}`}
+                                    title="LinkedIn"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Linkedin size={14} />
+                                  </a>
+                                )}
                               </div>
                               {user && m.notes && <p className={styles.memberLevel}>{m.notes}</p>}
                               {isMember && m.whatsapp_number && (
@@ -1685,6 +1721,18 @@ export default function ProjectDetailClient({ id }) {
                 value={manualWhatsapp}
                 onChange={(e) => setManualWhatsapp(e.target.value)}
               />
+              <Input
+                id="manual-linkedin"
+                label="LinkedIn Profile URL (optional)"
+                value={manualLinkedin}
+                onChange={(e) => setManualLinkedin(e.target.value)}
+              />
+              <Input
+                id="manual-github"
+                label="GitHub Profile URL (optional)"
+                value={manualGithub}
+                onChange={(e) => setManualGithub(e.target.value)}
+              />
             </div>
           </div>
         )}
@@ -1914,6 +1962,18 @@ export default function ProjectDetailClient({ id }) {
                 label="WhatsApp Number (optional)"
                 value={editManualWhatsapp}
                 onChange={(e) => setEditManualWhatsapp(e.target.value)}
+              />
+              <Input
+                id="edit-manual-linkedin"
+                label="LinkedIn Profile URL (optional)"
+                value={editManualLinkedin}
+                onChange={(e) => setEditManualLinkedin(e.target.value)}
+              />
+              <Input
+                id="edit-manual-github"
+                label="GitHub Profile URL (optional)"
+                value={editManualGithub}
+                onChange={(e) => setEditManualGithub(e.target.value)}
               />
               <Input
                 id="edit-manual-notes"
