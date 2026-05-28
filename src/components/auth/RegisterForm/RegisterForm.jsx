@@ -141,7 +141,9 @@ export default function RegisterForm() {
     const dataToValidate = {
       ...formData,
       whatsapp_number: formattedWhatsapp,
-      department_id: requiresDepartment ? formData.department_id : null
+      department_id: requiresDepartment ? formData.department_id : null,
+      linkedin_url: formData.linkedin_url ? (formData.linkedin_url.startsWith('http') ? formData.linkedin_url : `https://${formData.linkedin_url}`) : '',
+      github_url: formData.github_url ? (formData.github_url.startsWith('http') ? formData.github_url : `https://${formData.github_url}`) : ''
     };
 
     // Validate
@@ -396,9 +398,9 @@ export default function RegisterForm() {
             id="reg-whatsapp"
             label="WhatsApp Number"
             value={formData.whatsapp_number}
-            onChange={(e) => updateField('whatsapp_number', e.target.value.replace(/\D/g, '').replace(/^0/, ''))}
+            onChange={(e) => updateField('whatsapp_number', e.target.value.replace(/\D/g, '').slice(0, 11))}
             error={errors.whatsapp_number}
-            helperText="E.g, 01........"
+            helperText="E.g, 01........ (11 numbers total)"
             required
             autoComplete="tel"
             placeholder="01000666777"
@@ -530,7 +532,7 @@ export default function RegisterForm() {
             value={formData.linkedin_url}
             onChange={(e) => updateField('linkedin_url', e.target.value)}
             error={errors.linkedin_url}
-            placeholder="https://linkedin.com/in/..."
+            placeholder="linkedin.com/in/..."
           />
           <Input
             id="reg-github"
@@ -539,7 +541,7 @@ export default function RegisterForm() {
             value={formData.github_url}
             onChange={(e) => updateField('github_url', e.target.value)}
             error={errors.github_url}
-            placeholder="https://github.com/..."
+            placeholder="github.com/..."
           />
         </div>
       </div>

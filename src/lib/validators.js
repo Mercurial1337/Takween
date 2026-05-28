@@ -24,19 +24,17 @@ export const registerSchema = z.object({
   skills: z.array(z.string()).optional().default([]),
   linkedin_url: z
     .string()
-    .url('Please enter a valid URL')
     .regex(
-      /^https?:\/\/(www\.)?linkedin\.com\//i,
-      'Must be a valid LinkedIn URL (e.g. https://linkedin.com/in/...)'
+      /^(https?:\/\/)?(www\.)?linkedin\.com\/.+/i,
+      'Must be a valid LinkedIn URL (e.g. linkedin.com/in/...)'
     )
     .optional()
     .or(z.literal('')),
   github_url: z
     .string()
-    .url('Please enter a valid URL')
     .regex(
-      /^https?:\/\/(www\.)?github\.com\//i,
-      'Must be a valid GitHub URL (e.g. https://github.com/...)'
+      /^(https?:\/\/)?(www\.)?github\.com\/.+/i,
+      'Must be a valid GitHub URL (e.g. github.com/...)'
     )
     .optional()
     .or(z.literal('')),
@@ -61,18 +59,16 @@ export const profileUpdateSchema = z.object({
   department_id: z.string().uuid().optional(),
   linkedin_url: z
     .string()
-    .url()
     .regex(
-      /^https?:\/\/(www\.)?linkedin\.com\//i,
+      /^(https?:\/\/)?(www\.)?linkedin\.com\/.+/i,
       'Must be a valid LinkedIn URL'
     )
     .optional()
     .or(z.literal('')),
   github_url: z
     .string()
-    .url()
     .regex(
-      /^https?:\/\/(www\.)?github\.com\//i,
+      /^(https?:\/\/)?(www\.)?github\.com\/.+/i,
       'Must be a valid GitHub URL'
     )
     .optional()

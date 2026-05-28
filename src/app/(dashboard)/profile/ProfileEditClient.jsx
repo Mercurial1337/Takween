@@ -111,22 +111,25 @@ export default function ProfileEditClient() {
     setSaving(true);
     setErrors({});
 
-    // Validate URL fields before saving
+    // Format URLs before validation
+    const formattedLinkedin = formData.linkedin_url ? (formData.linkedin_url.startsWith('http') ? formData.linkedin_url : `https://${formData.linkedin_url}`) : '';
+    const formattedGithub = formData.github_url ? (formData.github_url.startsWith('http') ? formData.github_url : `https://${formData.github_url}`) : '';
+
     const urlErrors = {};
-    if (formData.linkedin_url) {
+    if (formattedLinkedin) {
       try {
         const linkedinCheck = profileUpdateSchema.shape.linkedin_url;
-        linkedinCheck.parse(formData.linkedin_url);
+        linkedinCheck.parse(formattedLinkedin);
       } catch {
-        urlErrors.linkedin_url = 'Must be a valid LinkedIn URL (e.g. https://linkedin.com/in/...)';
+        urlErrors.linkedin_url = 'Must be a valid LinkedIn URL (e.g. linkedin.com/in/...)';
       }
     }
-    if (formData.github_url) {
+    if (formattedGithub) {
       try {
         const githubCheck = profileUpdateSchema.shape.github_url;
-        githubCheck.parse(formData.github_url);
+        githubCheck.parse(formattedGithub);
       } catch {
-        urlErrors.github_url = 'Must be a valid GitHub URL (e.g. https://github.com/...)';
+        urlErrors.github_url = 'Must be a valid GitHub URL (e.g. github.com/...)';
       }
     }
     if (Object.keys(urlErrors).length > 0) {
@@ -159,8 +162,8 @@ export default function ProfileEditClient() {
           whatsapp_number: formattedWhatsapp,
           level_id: formData.level_id || null,
           department_id: finalDeptId,
-          linkedin_url: formData.linkedin_url || null,
-          github_url: formData.github_url || null,
+          linkedin_url: formattedLinkedin || null,
+          github_url: formattedGithub || null,
         })
         .eq('id', user.id);
 
@@ -245,10 +248,10 @@ export default function ProfileEditClient() {
               id="profile-whatsapp"
               label="WhatsApp Number"
               value={formData.whatsapp_number}
-              onChange={(e) => updateField('whatsapp_number', e.target.value.replace(/\D/g, '').replace(/^0/, ''))}
+              onChange={(e) => updateField('whatsapp_number', e.target.value.replace(/\D/g, '').slice(0, 11))}
               required
               placeholder="01000666777"
-              helperText="E.g, 01........"
+              helperText="E.g, 01........ (11 numbers total)"
               leftElement={
                 showCustomCode ? (
                   <input
@@ -361,7 +364,7 @@ export default function ProfileEditClient() {
               value={formData.linkedin_url}
               onChange={(e) => updateField('linkedin_url', e.target.value)}
               error={errors.linkedin_url}
-              placeholder="https://linkedin.com/in/..."
+              placeholder="linkedin.com/in/..."
             />
             <Input
               id="profile-github"
@@ -370,7 +373,7 @@ export default function ProfileEditClient() {
               value={formData.github_url}
               onChange={(e) => updateField('github_url', e.target.value)}
               error={errors.github_url}
-              placeholder="https://github.com/..."
+              placeholder="github.com/..."
             />
           </div>
 
