@@ -1023,7 +1023,8 @@ export default function ProjectDetailClient({ id }) {
               </div>
             </Card>
           ) : (
-            <div className={styles.layoutGrid}>
+            <>
+              <div className={styles.layoutGrid}>
               {/* Left Pane: Team List */}
               <div className={styles.leftPane}>
                 <div className={styles.paneHeader}>
@@ -1453,6 +1454,7 @@ export default function ProjectDetailClient({ id }) {
               className={`${styles.mobileBackdrop} ${showMobileDetails ? styles.open : ''}`}
               onClick={() => setShowMobileDetails(false)}
             />
+            </>
           )}
         </div>
       )}
