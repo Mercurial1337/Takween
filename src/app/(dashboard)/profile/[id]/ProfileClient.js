@@ -176,6 +176,15 @@ export default function ProfileClient({ id }) {
               ) : (
                 <span className={styles.noLink}>No LinkedIn link provided</span>
               )}
+            </div>
+          </div>
+
+          {/* Contact Details Section */}
+          <div className={styles.section}>
+            <h3 className={styles.sectionTitle}>
+              <Phone size={18} /> Contact Details
+            </h3>
+            <div className={styles.linksGrid}>
               {profile.whatsapp_number ? (
                 <a
                   href={`https://wa.me/${profile.whatsapp_number.replace(/\D/g, '')}`}
@@ -188,32 +197,12 @@ export default function ProfileClient({ id }) {
               ) : (
                 <span className={styles.noLink}>No WhatsApp number provided</span>
               )}
+              {showContactInfo && profile.email && (
+                <div className={styles.socialLink} style={{ cursor: 'text' }}>
+                  <Mail size={16} /> {profile.email}
+                </div>
+              )}
             </div>
-          </div>
-
-          {/* Contact Details Section (Conditionally Protected) */}
-          <div className={styles.section}>
-            <h3 className={styles.sectionTitle}>
-              <Mail size={18} /> Contact Details
-            </h3>
-            {showContactInfo ? (
-              <div className={styles.contactDetails}>
-                <div className={styles.contactItem}>
-                  <Mail size={16} />
-                  <span>{profile.email}</span>
-                </div>
-              </div>
-            ) : (
-              <div className={styles.protectedContact}>
-                <ShieldAlert className={styles.lockIcon} size={20} />
-                <div>
-                  <p className={styles.protectedTitle}>Email address hidden</p>
-                  <p className={styles.protectedDesc}>
-                    You must form a team with {profile.full_name.split(' ')[0]} to view their email.
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </Card>
