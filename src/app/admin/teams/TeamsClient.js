@@ -2,13 +2,18 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { Trash2, Eye, Users, FileText, User } from 'lucide-react';
+import { Trash2, Eye, Users, FileText, User, Download } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/contexts/ToastContext';
 import Card from '@/components/ui/Card/Card';
+import Button from '@/components/ui/Button/Button';
 import Badge from '@/components/ui/Badge/Badge';
+import Select from '@/components/ui/Select/Select';
+import Pagination from '@/components/ui/Pagination/Pagination';
 import { formatRelativeTime } from '@/lib/utils';
 import styles from '../projects/page.module.css';
+
+const PAGE_SIZE = 10;
 
 export default function TeamsClient() {
   const { showToast } = useToast();
@@ -16,39 +21,68 @@ export default function TeamsClient() {
 
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Filters and Pagination State
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [projectsList, setProjectsList] = useState([]);
+  const [departmentsList, setDepartmentsList] = useState([]);
+  const [selectedProject, setSelectedProject] = useState('all');
+  const [selectedDepartment, setSelectedDepartment] = useState('all');
+
+  useEffect(() => {
+    supabase.from('projects').select('id, title').then(({ data }) => setProjectsList(data || []));
+    supabase.from('departments').select('id, name').then(({ data }) => setDepartmentsList(data || []));
+  }, [supabase]);
 
   const fetchTeams = useCallback(async () => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('teams')
         .select(`
           id,
           status,
           created_at,
-          projects (id, title),
+          projects!inner (id, title, department_id),
           profiles:owner_id (id, full_name, email),
           team_members (id, user_id),
           manual_members (id)
-        `)
-        .order('created_at', { ascending: false });
+        `, { count: 'exact' });
+
+      if (selectedProject !== 'all') {
+        query = query.eq('project_id', selectedProject);
+      }
+      if (selectedDepartment !== 'all') {
+        query = query.eq('projects.department_id', selectedDepartment);
+      }
+
+      const from = (page - 1) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
+      const { data, count, error } = await query
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (error) throw error;
       setTeams(data || []);
+      if (count !== null) setTotalCount(count);
     } catch (err) {
       console.error('Error fetching teams:', err);
       showToast({ title: 'Error', message: err.message, variant: 'error' });
     } finally {
       setLoading(false);
     }
-  }, [supabase, showToast]);
+  }, [supabase, showToast, page, selectedProject, selectedDepartment]);
 
   useEffect(() => {
-    let active = true;
-    Promise.resolve().then(() => {
-      if (active) fetchTeams();
-    });
-    return () => { active = false; };
+    fetchTeams();
   }, [fetchTeams]);
+
+  const handleFilterChange = (setter) => (e) => {
+    setter(e.target.value);
+    setPage(1); // Reset to first page when filtering
+  };
 
   const handleDeleteTeam = async (teamId, projectTitle, members) => {
     if (!confirm(`Are you sure you want to delete this team for "${projectTitle}"? This cannot be undone.`)) return;
@@ -78,10 +112,57 @@ export default function TeamsClient() {
     }
   };
 
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  const handleExport = async () => {
+    try {
+      const { data } = await supabase.from('teams').select('id, status, created_at, projects(title), profiles:owner_id(full_name)');
+      if (data) {
+        const headers = ['Project', 'Owner', 'Status', 'Created'];
+        const rows = data.map(t => [t.projects?.title || '', t.profiles?.full_name || '', t.status, new Date(t.created_at).toLocaleDateString()]);
+        const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'takween_teams.csv'; a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      showToast({ title: 'Export failed', message: err.message, variant: 'error' });
+    }
+  };
+
   return (
     <div>
       <div className={styles.header}>
-        <h1 className={styles.title}>Teams Overview</h1>
+        <h1 className={styles.title}>Teams Overview ({totalCount})</h1>
+        <Button variant="ghost" size="sm" icon={Download} onClick={handleExport}>Export CSV</Button>
+      </div>
+
+      <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
+        <div style={{ minWidth: '200px' }}>
+          <Select
+            id="filter-project"
+            label="Filter by Project"
+            options={[
+              { value: 'all', label: 'All Projects' },
+              ...projectsList.map(p => ({ value: p.id, label: p.title }))
+            ]}
+            value={selectedProject}
+            onChange={handleFilterChange(setSelectedProject)}
+          />
+        </div>
+        <div style={{ minWidth: '200px' }}>
+          <Select
+            id="filter-department"
+            label="Filter by Department"
+            options={[
+              { value: 'all', label: 'All Departments' },
+              ...departmentsList.map(d => ({ value: d.id, label: d.name }))
+            ]}
+            value={selectedDepartment}
+            onChange={handleFilterChange(setSelectedDepartment)}
+          />
+        </div>
       </div>
 
       {loading ? (
@@ -91,63 +172,74 @@ export default function TeamsClient() {
       ) : teams.length === 0 ? (
         <div className={styles.list}>
           <Card className={styles.row} style={{ justifyContent: 'center', padding: '40px', color: 'var(--color-text-muted)' }}>
-            No teams have been created yet.
+            No teams match your filters or have been created yet.
           </Card>
         </div>
       ) : (
-        <div className={styles.list}>
-          {teams.map((team) => {
-            const projectTitle = team.projects?.title || 'Unknown Project';
-            const ownerName = team.profiles?.full_name || 'Unknown Owner';
-            const registeredCount = team.team_members?.length || 0;
-            const manualCount = team.manual_members?.length || 0;
-            const totalMembers = registeredCount + manualCount;
+        <>
+          <div className={styles.list}>
+            {teams.map((team) => {
+              const projectTitle = team.projects?.title || 'Unknown Project';
+              const ownerName = team.profiles?.full_name || 'Unknown Owner';
+              const registeredCount = team.team_members?.length || 0;
+              const manualCount = team.manual_members?.length || 0;
+              const totalMembers = registeredCount + manualCount;
 
-            return (
-              <Card key={team.id} className={styles.row}>
-                <div className={styles.rowInfo}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
-                    <FileText size={16} style={{ color: 'var(--color-primary)' }} />
-                    <p className={styles.rowTitle} style={{ fontSize: 'var(--text-base)' }}>
-                      {projectTitle}
-                    </p>
-                    <Badge variant={team.status === 'recruiting' ? 'success' : 'default'} size="sm">
-                      {team.status === 'recruiting' ? 'Recruiting' : 'Closed'}
-                    </Badge>
+              return (
+                <Card key={team.id} className={styles.row}>
+                  <div className={styles.rowInfo}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                      <FileText size={16} style={{ color: 'var(--color-primary)' }} />
+                      <p className={styles.rowTitle} style={{ fontSize: 'var(--text-base)' }}>
+                        {projectTitle}
+                      </p>
+                      <Badge variant={team.status === 'recruiting' ? 'success' : 'default'} size="sm">
+                        {team.status === 'recruiting' ? 'Recruiting' : 'Closed'}
+                      </Badge>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                      <p className={styles.rowMeta} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <User size={12} /> Owner: {ownerName}
+                      </p>
+                      <p className={styles.rowMeta} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Users size={12} /> Members: {totalMembers} ({registeredCount} registered, {manualCount} manual)
+                      </p>
+                      <p className={styles.rowMeta}>
+                        Created {formatRelativeTime(team.created_at)}
+                      </p>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                    <p className={styles.rowMeta} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <User size={12} /> Owner: {ownerName}
-                    </p>
-                    <p className={styles.rowMeta} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Users size={12} /> Members: {totalMembers} ({registeredCount} registered, {manualCount} manual)
-                    </p>
-                    <p className={styles.rowMeta}>
-                      Created {formatRelativeTime(team.created_at)}
-                    </p>
+                  <div className={styles.rowActions}>
+                    {team.projects?.id && (
+                      <Link href={`/projects/${team.projects.id}`}>
+                        <button className={styles.iconBtn} title="View team page">
+                          <Eye size={16} />
+                        </button>
+                      </Link>
+                    )}
+                    <button
+                      className={styles.iconBtn}
+                      onClick={() => handleDeleteTeam(team.id, projectTitle, team.team_members || [])}
+                      title="Delete team"
+                      style={{ color: 'var(--color-error)' }}
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
-                </div>
-                <div className={styles.rowActions}>
-                  {team.projects?.id && (
-                    <Link href={`/projects/${team.projects.id}`}>
-                      <button className={styles.iconBtn} title="View team page">
-                        <Eye size={16} />
-                      </button>
-                    </Link>
-                  )}
-                  <button
-                    className={styles.iconBtn}
-                    onClick={() => handleDeleteTeam(team.id, projectTitle, team.team_members || [])}
-                    title="Delete team"
-                    style={{ color: 'var(--color-error)' }}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
+                </Card>
+              );
+            })}
+          </div>
+          {totalPages > 1 && (
+            <div style={{ marginTop: '24px' }}>
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );
