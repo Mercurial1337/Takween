@@ -127,7 +127,7 @@ describe('POST /api/email', () => {
 
     const sentArgs = mockSendMail.mock.calls[0][0];
     expect(sentArgs.subject).toBe('Invitation to join Graduation Project');
-    expect(sentArgs.html).toContain('You\'ve Been Invited!');
+    expect(sentArgs.html).toContain('Team Invitation');
     expect(sentArgs.html).toContain('Team Owner');
     expect(sentArgs.html).toContain('Graduation Project');
     expect(sentArgs.html).toContain('We need your skills!');
@@ -147,7 +147,7 @@ describe('POST /api/email', () => {
 
     const sentArgs = mockSendMail.mock.calls[0][0];
     expect(sentArgs.subject).toBe('Your invitation for Graduation Project was accepted');
-    expect(sentArgs.html).toContain('Invitation Accepted!');
+    expect(sentArgs.html).toContain('Invitation Accepted');
     expect(sentArgs.html).toContain('Student');
     expect(NextResponse.json).toHaveBeenCalledWith({ success: true, messageId: 'test-message-id' });
   });
@@ -165,7 +165,7 @@ describe('POST /api/email', () => {
 
     const sentArgs = mockSendMail.mock.calls[0][0];
     expect(sentArgs.subject).toBe('Update on your invitation for Graduation Project');
-    expect(sentArgs.html).toContain('Invitation Update');
+    expect(sentArgs.html).toContain('Invitation Declined');
     expect(sentArgs.html).toContain('declined your invitation');
     expect(sentArgs.html).toContain('Student Directory');
     expect(NextResponse.json).toHaveBeenCalledWith({ success: true, messageId: 'test-message-id' });
