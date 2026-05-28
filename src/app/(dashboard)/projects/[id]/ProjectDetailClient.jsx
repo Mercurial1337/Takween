@@ -44,6 +44,7 @@ export default function ProjectDetailClient({ id }) {
   const [projectSeekers, setProjectSeekers] = useState([]);
   const [showSeekerModal, setShowSeekerModal] = useState(false);
   const [seekerMessage, setSeekerMessage] = useState('');
+  const [showMobileDetails, setShowMobileDetails] = useState(false);
 
   // Modals
   const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
@@ -1068,7 +1069,10 @@ export default function ProjectDetailClient({ id }) {
                     return (
                       <Card
                         key={t.id}
-                        onClick={() => setSelectedTeamId(t.id)}
+                        onClick={() => {
+                          setSelectedTeamId(t.id);
+                          setShowMobileDetails(true);
+                        }}
                         className={`${styles.teamListItemCard} ${isSelected ? styles.teamListItemActive : ''}`}
                         hoverable
                       >
@@ -1128,10 +1132,23 @@ export default function ProjectDetailClient({ id }) {
                 </div>
               </div>
 
+              {/* Mobile Backdrop */}
+              <div 
+                className={`${styles.mobileBackdrop} ${showMobileDetails ? styles.open : ''}`}
+                onClick={() => setShowMobileDetails(false)}
+              />
+
               {/* Right Pane: Selected Team Details */}
-              <div className={styles.rightPane}>
+              <div className={`${styles.rightPane} ${showMobileDetails ? styles.mobileOpen : ''}`}>
                 {selectedTeam ? (
                   <div className={styles.teamDetailsCard}>
+                    {/* Mobile Close Button (CSS handles hiding on desktop) */}
+                    <div className={styles.mobileCloseHandle}>
+                      <button onClick={() => setShowMobileDetails(false)} className={styles.mobileCloseBtn}>
+                        <X size={20} />
+                      </button>
+                    </div>
+
                     {/* Team Details Header */}
                     <div className={styles.teamHeader}>
                       <div>
