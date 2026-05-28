@@ -3,12 +3,13 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, FolderOpen, Building2, GraduationCap, Sparkles, Users, UserPlus, ClipboardList, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, FolderOpen, Building2, GraduationCap, Sparkles, Users, UserPlus, ClipboardList, MessageSquare, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import styles from './layout.module.css';
 
 const adminLinks = [
   { href: '/admin', icon: LayoutDashboard, label: 'Overview' },
+  { href: '/admin/users', icon: User, label: 'Users' },
   { href: '/admin/projects', icon: FolderOpen, label: 'Projects' },
   { href: '/admin/departments', icon: Building2, label: 'Departments' },
   { href: '/admin/levels', icon: GraduationCap, label: 'Levels' },
