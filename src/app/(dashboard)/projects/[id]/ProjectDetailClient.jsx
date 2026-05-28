@@ -1678,44 +1678,53 @@ export default function ProjectDetailClient({ id }) {
                         </p>
                       )}
                       {(seeker.profiles?.github_url || seeker.profiles?.linkedin_url || seeker.profiles?.whatsapp_number) && (
-                        <div className={styles.seekerSocialLinks}>
-                          {seeker.profiles?.github_url && (
-                            <a
-                              href={ensureAbsoluteUrl(seeker.profiles.github_url)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={styles.socialIcon}
-                              title="GitHub"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Github size={14} />
-                            </a>
-                          )}
-                          {seeker.profiles?.linkedin_url && (
-                            <a
-                              href={ensureAbsoluteUrl(seeker.profiles.linkedin_url)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={`${styles.socialIcon} ${styles.socialIconLinkedin}`}
-                              title="LinkedIn"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Linkedin size={14} />
-                            </a>
-                          )}
-                          {seeker.profiles?.whatsapp_number && (
-                            <a
-                              href={`https://wa.me/${seeker.profiles.whatsapp_number.replace(/\D/g, '')}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={`${styles.socialIcon} ${styles.socialIconWhatsapp}`}
-                              title="WhatsApp"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Whatsapp size={14} />
-                            </a>
-                          )}
-                        </div>
+                        user ? (
+                          <div className={styles.seekerSocialLinks}>
+                            {seeker.profiles?.github_url && (
+                              <a
+                                href={ensureAbsoluteUrl(seeker.profiles.github_url)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={styles.socialIcon}
+                                title="GitHub"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Github size={14} />
+                              </a>
+                            )}
+                            {seeker.profiles?.linkedin_url && (
+                              <a
+                                href={ensureAbsoluteUrl(seeker.profiles.linkedin_url)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`${styles.socialIcon} ${styles.socialIconLinkedin}`}
+                                title="LinkedIn"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Linkedin size={14} />
+                              </a>
+                            )}
+                            {seeker.profiles?.whatsapp_number && (
+                              <a
+                                href={`https://wa.me/${seeker.profiles.whatsapp_number.replace(/\D/g, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`${styles.socialIcon} ${styles.socialIconWhatsapp}`}
+                                title="WhatsApp"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Whatsapp size={14} />
+                              </a>
+                            )}
+                          </div>
+                        ) : (
+                          <div className={styles.seekerSocialLinks} style={{ alignItems: 'center', gap: '6px', color: 'var(--color-text-muted)' }}>
+                            <Lock size={14} />
+                            <Link href={`/login?redirect=/projects/${id}`} style={{ fontSize: 'var(--text-xs)', textDecoration: 'underline', color: 'inherit' }}>
+                              Sign in to view
+                            </Link>
+                          </div>
+                        )
                       )}
                     </div>
                   </div>
