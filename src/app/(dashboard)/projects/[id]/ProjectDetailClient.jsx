@@ -1131,13 +1131,6 @@ export default function ProjectDetailClient({ id }) {
                   })}
                 </div>
               </div>
-
-              {/* Mobile Backdrop */}
-              <div 
-                className={`${styles.mobileBackdrop} ${showMobileDetails ? styles.open : ''}`}
-                onClick={() => setShowMobileDetails(false)}
-              />
-
               {/* Right Pane: Selected Team Details */}
               <div className={`${styles.rightPane} ${showMobileDetails ? styles.mobileOpen : ''}`}>
                 {selectedTeam ? (
@@ -1454,6 +1447,12 @@ export default function ProjectDetailClient({ id }) {
                 )}
               </div>
             </div>
+
+            {/* Mobile Backdrop */}
+            <div 
+              className={`${styles.mobileBackdrop} ${showMobileDetails ? styles.open : ''}`}
+              onClick={() => setShowMobileDetails(false)}
+            />
           )}
         </div>
       )}
