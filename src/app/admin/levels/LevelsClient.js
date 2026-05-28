@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
@@ -10,7 +10,10 @@ import Button from '@/components/ui/Button/Button';
 import Card from '@/components/ui/Card/Card';
 import Input from '@/components/ui/Input/Input';
 import Modal from '@/components/ui/Modal/Modal';
+import Pagination from '@/components/ui/Pagination/Pagination';
 import styles from '../projects/page.module.css';
+
+const PAGE_SIZE = 10;
 
 export default function LevelsClient() {
   const { user } = useAuth();
@@ -23,10 +26,28 @@ export default function LevelsClient() {
   const [sortOrder, setSortOrder] = useState(0);
   const [saving, setSaving] = useState(false);
 
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [search, setSearch] = useState('');
+  const [searchDebounced, setSearchDebounced] = useState('');
+
+  useEffect(() => {
+    const t = setTimeout(() => { setSearchDebounced(search); setPage(1); }, 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
   const fetchData = useCallback(async () => {
-    const { data } = await supabase.from('levels').select('*').order('sort_order');
+    const from = (page - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
+    let query = supabase.from('levels').select('*', { count: 'exact' });
+    if (searchDebounced) {
+      query = query.ilike('name', `%${searchDebounced}%`);
+    }
+    const { data, count } = await query.order('sort_order').range(from, to);
     if (data) setItems(data);
-  }, [supabase]);
+    if (count !== null) setTotalCount(count);
+  }, [supabase, page, searchDebounced]);
 
   useEffect(() => {
     let active = true;
@@ -68,12 +89,19 @@ export default function LevelsClient() {
     fetchData();
   };
 
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
   return (
     <div>
       <div className={styles.header}>
-        <h1 className={styles.title}>Academic Levels</h1>
+        <h1 className={styles.title}>Academic Levels ({totalCount})</h1>
         <Button onClick={openCreate} icon={Plus} size="sm">New Level</Button>
       </div>
+
+      <div style={{ marginBottom: '16px' }}>
+        <Input id="level-search" placeholder="Search levels..." value={search} onChange={(e) => setSearch(e.target.value)} icon={Search} />
+      </div>
+
       <div className={styles.list}>
         {items.map((item) => (
           <Card key={item.id} className={styles.row}>
@@ -88,6 +116,13 @@ export default function LevelsClient() {
           </Card>
         ))}
       </div>
+
+      {totalPages > 1 && (
+        <div style={{ marginTop: '16px' }}>
+          <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+        </div>
+      )}
+
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editing ? 'Edit Level' : 'New Level'}
         footer={<div className={styles.modalFooter}><Button variant="ghost" onClick={() => setShowModal(false)}>Cancel</Button><Button onClick={handleSave} loading={saving}>{editing ? 'Save' : 'Create'}</Button></div>}>
         <div className={styles.form}>

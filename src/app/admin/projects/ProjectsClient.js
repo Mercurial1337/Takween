@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Download } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
@@ -11,7 +11,10 @@ import Input from '@/components/ui/Input/Input';
 import Select from '@/components/ui/Select/Select';
 import Modal from '@/components/ui/Modal/Modal';
 import Badge from '@/components/ui/Badge/Badge';
+import Pagination from '@/components/ui/Pagination/Pagination';
 import styles from './page.module.css';
+
+const PAGE_SIZE = 10;
 
 export default function ProjectsClient() {
   const { user } = useAuth();
@@ -21,6 +24,17 @@ export default function ProjectsClient() {
   const [projects, setProjects] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [search, setSearch] = useState('');
+  const [searchDebounced, setSearchDebounced] = useState('');
+
+  useEffect(() => {
+    const t = setTimeout(() => { setSearchDebounced(search); setPage(1); }, 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [formData, setFormData] = useState({
@@ -29,14 +43,23 @@ export default function ProjectsClient() {
   const [saving, setSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
+    setLoading(true);
+    const from = (page - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
+    let projQuery = supabase.from('projects').select('*, departments (name)', { count: 'exact' });
+    if (searchDebounced) {
+      projQuery = projQuery.ilike('title', `%${searchDebounced}%`);
+    }
     const [projRes, deptRes] = await Promise.all([
-      supabase.from('projects').select('*, departments (name)').order('created_at', { ascending: false }),
+      projQuery.order('created_at', { ascending: false }).range(from, to),
       supabase.from('departments').select('*').order('name'),
     ]);
     if (projRes.data) setProjects(projRes.data);
+    if (projRes.count !== null) setTotalCount(projRes.count);
     if (deptRes.data) setDepartments(deptRes.data);
     setLoading(false);
-  }, [supabase]);
+  }, [supabase, page, searchDebounced]);
 
   useEffect(() => {
     let active = true;
@@ -136,11 +159,17 @@ export default function ProjectsClient() {
     }
   };
 
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
   return (
     <div>
       <div className={styles.header}>
-        <h1 className={styles.title}>Projects</h1>
+        <h1 className={styles.title}>Projects ({totalCount})</h1>
         <Button onClick={openCreate} icon={Plus} size="sm">New Project</Button>
+      </div>
+
+      <div style={{ marginBottom: '16px' }}>
+        <Input id="project-search" placeholder="Search projects..." value={search} onChange={(e) => setSearch(e.target.value)} icon={Search} />
       </div>
 
       <div className={styles.list}>
@@ -166,6 +195,16 @@ export default function ProjectsClient() {
           </Card>
         ))}
       </div>
+
+      {totalPages > 1 && (
+        <div style={{ marginTop: '24px' }}>
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
+        </div>
+      )}
 
       <Modal
         isOpen={showModal}

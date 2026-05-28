@@ -1,15 +1,18 @@
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { Trash2, Mail, ShieldCheck, UserPlus } from 'lucide-react';
+import { Trash2, Mail, ShieldCheck, UserPlus, Search } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/contexts/ToastContext';
 import Button from '@/components/ui/Button/Button';
 import Card from '@/components/ui/Card/Card';
 import Input from '@/components/ui/Input/Input';
 import Modal from '@/components/ui/Modal/Modal';
+import Pagination from '@/components/ui/Pagination/Pagination';
 import { formatRelativeTime } from '@/lib/utils';
 import styles from '../projects/page.module.css';
+
+const PAGE_SIZE = 10;
 
 export default function InvitesClient() {
   const { showToast } = useToast();
@@ -20,27 +23,46 @@ export default function InvitesClient() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [search, setSearch] = useState('');
+  const [searchDebounced, setSearchDebounced] = useState('');
+
+  useEffect(() => {
+    const t = setTimeout(() => { setSearchDebounced(search); setPage(1); }, 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const fetchInvites = useCallback(async () => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase
+      const from = (page - 1) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
+      let query = supabase
         .from('admin_invites')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*', { count: 'exact' });
+
+      if (searchDebounced) {
+        query = query.ilike('email', `%${searchDebounced}%`);
+      }
+
+      const { data, count, error } = await query
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (error) throw error;
       setInvites(data || []);
+      if (count !== null) setTotalCount(count);
     } catch (err) {
       console.error('Error fetching invites:', err);
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, [supabase, page, searchDebounced]);
 
   useEffect(() => {
-    Promise.resolve().then(() => {
-      fetchInvites();
-    });
+    fetchInvites();
   }, [fetchInvites]);
 
   const handleOpenModal = () => {
@@ -123,14 +145,20 @@ export default function InvitesClient() {
     }
   };
 
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
   return (
     <div>
       <div className={styles.header}>
-        <h1 className={styles.title}>Admin Invites</h1>
+        <h1 className={styles.title}>Admin Invites ({totalCount})</h1>
         <Button onClick={handleOpenModal} icon={UserPlus} size="sm">Invite Admin</Button>
       </div>
 
-      {loading ? (
+      <div style={{ marginBottom: '16px' }}>
+        <Input id="invite-search" placeholder="Search by email..." value={search} onChange={(e) => setSearch(e.target.value)} icon={Search} />
+      </div>
+
+      {loading && invites.length === 0 ? (
         <div className={styles.list}>
           <Card className={styles.row} style={{ height: '70px' }}>Loading invites...</Card>
         </div>
@@ -141,28 +169,35 @@ export default function InvitesClient() {
           </Card>
         </div>
       ) : (
-        <div className={styles.list}>
-          {invites.map((invite) => (
-            <Card key={invite.email} className={styles.row}>
-              <div className={styles.rowInfo}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Mail size={16} className={styles.rowIcon} style={{ color: 'var(--color-primary)' }} />
-                  <p className={styles.rowTitle}>{invite.email}</p>
+        <>
+          <div className={styles.list}>
+            {invites.map((invite) => (
+              <Card key={invite.email} className={styles.row}>
+                <div className={styles.rowInfo}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Mail size={16} className={styles.rowIcon} style={{ color: 'var(--color-primary)' }} />
+                    <p className={styles.rowTitle}>{invite.email}</p>
+                  </div>
+                  <p className={styles.rowMeta}>Invited {formatRelativeTime(invite.created_at)}</p>
                 </div>
-                <p className={styles.rowMeta}>Invited {formatRelativeTime(invite.created_at)}</p>
-              </div>
-              <div className={styles.rowActions}>
-                <button
-                  className={styles.iconBtn}
-                  onClick={() => handleDeleteInvite(invite.email)}
-                  title="Revoke invite"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </Card>
-          ))}
-        </div>
+                <div className={styles.rowActions}>
+                  <button
+                    className={styles.iconBtn}
+                    onClick={() => handleDeleteInvite(invite.email)}
+                    title="Revoke invite"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </Card>
+            ))}
+          </div>
+          {totalPages > 1 && (
+            <div style={{ marginTop: '16px' }}>
+              <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+            </div>
+          )}
+        </>
       )}
 
       <Modal
