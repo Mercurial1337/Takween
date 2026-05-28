@@ -81,6 +81,7 @@ export default function UsersClient() {
   }, [supabase, showToast, page, searchDebounced]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchUsers();
   }, [fetchUsers]);
 

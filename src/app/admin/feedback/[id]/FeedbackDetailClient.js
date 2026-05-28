@@ -23,6 +23,20 @@ export default function FeedbackDetailClient({ id }) {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
+  const updateStatus = async (newStatus, showNotify = true) => {
+    try {
+      setUpdating(true);
+      const { error } = await supabase.from('feedback').update({ status: newStatus }).eq('id', id);
+      if (error) throw error;
+      setFeedback(prev => ({ ...prev, status: newStatus }));
+      if (showNotify) showToast({ title: 'Status Updated', message: `Marked as ${newStatus}`, variant: 'success' });
+    } catch (err) {
+      showToast({ title: 'Error', message: 'Failed to update status.', variant: 'error' });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   useEffect(() => {
     const fetchFeedback = async () => {
       try {
@@ -52,19 +66,6 @@ export default function FeedbackDetailClient({ id }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const updateStatus = async (newStatus, showNotify = true) => {
-    try {
-      setUpdating(true);
-      const { error } = await supabase.from('feedback').update({ status: newStatus }).eq('id', id);
-      if (error) throw error;
-      setFeedback(prev => ({ ...prev, status: newStatus }));
-      if (showNotify) showToast({ title: 'Status Updated', message: `Marked as ${newStatus}`, variant: 'success' });
-    } catch (err) {
-      showToast({ title: 'Error', message: 'Failed to update status.', variant: 'error' });
-    } finally {
-      setUpdating(false);
-    }
-  };
 
   const handleDelete = async () => {
     if (!confirm('Are you sure you want to delete this feedback?')) return;

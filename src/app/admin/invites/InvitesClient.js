@@ -62,6 +62,7 @@ export default function InvitesClient() {
   }, [supabase, page, searchDebounced]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchInvites();
   }, [fetchInvites]);
 

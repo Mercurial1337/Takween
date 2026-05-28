@@ -71,6 +71,7 @@ export default function AdminFeedbackClient() {
   }, [supabase, showToast, page, searchDebounced, filterStatus, filterType]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchFeedback();
   }, [fetchFeedback]);
 
