@@ -66,7 +66,7 @@ const mockSeekers = [
 describe('ProjectDetailClient - Available Students Tab', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Default Supabase responses
     mockSupabase.from.mockImplementation((table) => {
       const builder = {
@@ -134,7 +134,7 @@ describe('ProjectDetailClient - Available Students Tab', () => {
     // Type a message and submit
     const input = screen.getByLabelText(/Short Message/i);
     await userEvent.type(input, 'I love React');
-    
+
     // We need to mock the insert response just before clicking
     mockSupabase.from.mockImplementationOnce((table) => {
       if (table === 'project_seekers') {
