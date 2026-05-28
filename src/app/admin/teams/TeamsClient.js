@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import Link from 'next/link';
-import { Trash2, Eye, Users, FileText, User, Download } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Users, FileText, User, Download, ChevronRight } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/contexts/ToastContext';
 import Card from '@/components/ui/Card/Card';
@@ -16,6 +16,7 @@ import styles from '../projects/page.module.css';
 const PAGE_SIZE = 10;
 
 export default function TeamsClient() {
+  const router = useRouter();
   const { showToast } = useToast();
   const supabase = useMemo(() => createClient(), []);
 
@@ -85,33 +86,7 @@ export default function TeamsClient() {
     setPage(1); // Reset to first page when filtering
   };
 
-  const handleDeleteTeam = async (teamId, projectTitle, members) => {
-    if (!confirm(`Are you sure you want to delete this team for "${projectTitle}"? This cannot be undone.`)) return;
 
-    try {
-      const notifications = members
-        .filter((m) => m.user_id)
-        .map((m) => ({
-          user_id: m.user_id,
-          type: 'team_deleted',
-          title: 'Team deleted by administrator',
-          body: `The team for project "${projectTitle}" has been deleted by an administrator.`,
-          metadata: {},
-        }));
-
-      if (notifications.length > 0) {
-        await supabase.from('notifications').insert(notifications);
-      }
-
-      const { error } = await supabase.from('teams').delete().eq('id', teamId);
-      if (error) throw error;
-
-      showToast({ title: 'Team deleted', variant: 'success' });
-      fetchTeams();
-    } catch (err) {
-      showToast({ title: 'Error', message: err.message, variant: 'error' });
-    }
-  };
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
@@ -187,7 +162,12 @@ export default function TeamsClient() {
               const totalMembers = registeredCount + manualCount;
 
               return (
-                <Card key={team.id} className={styles.row}>
+                <Card
+                  key={team.id}
+                  className={styles.row}
+                  onClick={() => router.push(`/admin/teams/${team.id}`)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <div className={styles.rowInfo}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
                       <FileText size={16} style={{ color: 'var(--color-primary)' }} />
@@ -210,23 +190,7 @@ export default function TeamsClient() {
                       </p>
                     </div>
                   </div>
-                  <div className={styles.rowActions}>
-                    {team.projects?.id && (
-                      <Link href={`/projects/${team.projects.id}`}>
-                        <button className={styles.iconBtn} title="View team page">
-                          <Eye size={16} />
-                        </button>
-                      </Link>
-                    )}
-                    <button
-                      className={styles.iconBtn}
-                      onClick={() => handleDeleteTeam(team.id, projectTitle, team.team_members || [])}
-                      title="Delete team"
-                      style={{ color: 'var(--color-error)' }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
+                  <ChevronRight size={16} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
                 </Card>
               );
             })}
