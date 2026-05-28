@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS public.system_activities (
 ALTER TABLE public.system_activities ENABLE ROW LEVEL SECURITY;
 
 -- Only admins can view activities
+DROP POLICY IF EXISTS "Admins can view system activities" ON public.system_activities;
 CREATE POLICY "Admins can view system activities" 
     ON public.system_activities FOR SELECT 
     USING (EXISTS (
@@ -31,6 +32,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS log_profile_creation_trigger ON public.profiles;
 CREATE TRIGGER log_profile_creation_trigger
     AFTER INSERT ON public.profiles
     FOR EACH ROW EXECUTE FUNCTION log_profile_creation();
@@ -45,6 +47,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS log_team_creation_trigger ON public.teams;
 CREATE TRIGGER log_team_creation_trigger
     AFTER INSERT ON public.teams
     FOR EACH ROW EXECUTE FUNCTION log_team_creation();
@@ -61,6 +64,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS log_profile_update_trigger ON public.profiles;
 CREATE TRIGGER log_profile_update_trigger
     AFTER UPDATE ON public.profiles
     FOR EACH ROW EXECUTE FUNCTION log_profile_update();
