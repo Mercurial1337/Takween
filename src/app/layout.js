@@ -53,8 +53,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={inter.variable} data-scroll-behavior="smooth">
-      <body>
+    <html lang="en" className={inter.variable} data-scroll-behavior="smooth" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <AuthProvider>
           <NotificationsProvider>
             <ToastProvider>{children}</ToastProvider>
