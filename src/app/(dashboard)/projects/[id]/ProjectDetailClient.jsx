@@ -78,6 +78,7 @@ export default function ProjectDetailClient({ id }) {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteTarget, setInviteTarget] = useState(null);
   const [inviteMessage, setInviteMessage] = useState('');
+  const [myInvites, setMyInvites] = useState([]);
 
   // Visibility and Filtering logic
   const availableSkills = useMemo(() => {
@@ -227,6 +228,12 @@ export default function ProjectDetailClient({ id }) {
     return projectSeekers.find(s => s.user_id === user.id) || null;
   }, [user, projectSeekers]);
 
+  // Check if current user has a pending invite for the selected team
+  const pendingInviteForSelectedTeam = useMemo(() => {
+    if (!selectedTeam) return null;
+    return myInvites.find(inv => inv.team_id === selectedTeam.id);
+  }, [selectedTeam, myInvites]);
+
   const fetchProject = useCallback(async () => {
     try {
       // Get project
@@ -302,12 +309,24 @@ export default function ProjectDetailClient({ id }) {
               .or(`source_team_id.in.(${teamIds.join(',')}),target_team_id.in.(${teamIds.join(',')})`);
             if (mergeData) setMergeRequests(mergeData);
           }
+
+          // Fetch invites directed to the current user for these teams
+          if (user) {
+            const { data: invitesData } = await supabase
+              .from('team_invites')
+              .select('*')
+              .eq('user_id', user.id)
+              .eq('status', 'pending')
+              .in('team_id', teamIds);
+            if (invitesData) setMyInvites(invitesData);
+          }
         } else {
           setAllMembers([]);
           setAllManualMembers([]);
           setAllRequests([]);
           setMyRequests([]);
           setMergeRequests([]);
+          setMyInvites([]);
         }
       }
 
@@ -700,6 +719,53 @@ export default function ProjectDetailClient({ id }) {
       await supabase.from('teams').delete().eq('id', selectedTeam.id);
       showToast({ title: 'Team deleted', variant: 'success' });
       setSelectedTeamId(null);
+      await fetchProject();
+    } catch (err) {
+      showToast({ title: 'Error', message: err.message, variant: 'error' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Accept or decline an invitation directed to the user
+  const handleProjectInviteAction = async (invite, action) => {
+    setActionLoading(true);
+    try {
+      await supabase.from('team_invites').update({ status: action }).eq('id', invite.id);
+
+      const ownerId = selectedTeam?.owner_id;
+      const projectTitle = project?.title || 'a project';
+
+      if (action === 'accepted') {
+        await supabase.from('team_members').insert({
+          team_id: invite.team_id,
+          user_id: user.id,
+          role: 'member'
+        });
+
+        if (ownerId) {
+          await supabase.from('notifications').insert({
+            user_id: ownerId,
+            type: 'invite_accepted',
+            title: 'Invitation accepted',
+            body: `${profile?.full_name} has accepted your invitation to join the team for ${projectTitle}.`,
+            metadata: { team_id: invite.team_id },
+          });
+        }
+        
+        showToast({ title: 'Success', message: 'You have joined the team.', variant: 'success' });
+      } else {
+        if (ownerId) {
+          await supabase.from('notifications').insert({
+            user_id: ownerId,
+            type: 'invite_rejected',
+            title: 'Invitation declined',
+            body: `${profile?.full_name} has declined your invitation to join the team for ${projectTitle}.`,
+            metadata: { team_id: invite.team_id },
+          });
+        }
+        showToast({ title: 'Declined', message: 'You declined the invitation.', variant: 'success' });
+      }
       await fetchProject();
     } catch (err) {
       showToast({ title: 'Error', message: err.message, variant: 'error' });
@@ -1198,7 +1264,29 @@ export default function ProjectDetailClient({ id }) {
                       </div>
 
                       <div className={styles.teamActions}>
-                        {!isMember && !userTeamRequest && !isFull && selectedTeam.status === 'recruiting' && user && !userHasTeam && (
+                        {pendingInviteForSelectedTeam && !isMember && (
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <Button
+                              onClick={() => handleProjectInviteAction(pendingInviteForSelectedTeam, 'accepted')}
+                              loading={actionLoading}
+                              icon={Check}
+                              size="sm"
+                              variant="success"
+                            >
+                              Accept Invite
+                            </Button>
+                            <Button
+                              onClick={() => handleProjectInviteAction(pendingInviteForSelectedTeam, 'rejected')}
+                              loading={actionLoading}
+                              icon={X}
+                              size="sm"
+                              variant="ghost"
+                            >
+                              Decline
+                            </Button>
+                          </div>
+                        )}
+                        {!pendingInviteForSelectedTeam && !isMember && !userTeamRequest && !isFull && selectedTeam.status === 'recruiting' && user && !userHasTeam && (
                           <Button onClick={() => setShowJoinModal(true)} icon={UserPlus} size="sm">
                             Request to Join
                           </Button>
