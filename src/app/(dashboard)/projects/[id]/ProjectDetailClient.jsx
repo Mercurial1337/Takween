@@ -49,10 +49,10 @@ export default function ProjectDetailClient({ id }) {
   // Modals
   const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
   const [teamDescription, setTeamDescription] = useState('');
-  
+
   const [showEditDescriptionModal, setShowEditDescriptionModal] = useState(false);
   const [editDescription, setEditDescription] = useState('');
-  
+
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [joinMessage, setJoinMessage] = useState('');
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
@@ -106,7 +106,7 @@ export default function ProjectDetailClient({ id }) {
       const studentDeptId = profile.department_id;
       if (!studentDeptId) return []; // Require department to see teams
     }
-    
+
     if (deptFilter && deptFilter !== 'all') {
       result = result.filter(t => t.department_id === deptFilter);
     }
@@ -115,7 +115,7 @@ export default function ProjectDetailClient({ id }) {
     if (skillFilter && skillFilter !== 'all') {
       result = result.filter(t => {
         const membersInTeam = allMembers.filter(m => m.team_id === t.id);
-        return membersInTeam.some(m => 
+        return membersInTeam.some(m =>
           m.profiles?.profile_skills?.some(ps => ps.skill_id === skillFilter)
         );
       });
@@ -126,7 +126,7 @@ export default function ProjectDetailClient({ id }) {
       if (sortFilter === 'members_high' || sortFilter === 'members_low') {
         const aMembersCount = allMembers.filter(m => m.team_id === a.id).length + allManualMembers.filter(m => m.team_id === a.id).length;
         const bMembersCount = allMembers.filter(m => m.team_id === b.id).length + allManualMembers.filter(m => m.team_id === b.id).length;
-        
+
         if (sortFilter === 'members_high') return bMembersCount - aMembersCount;
         if (sortFilter === 'members_low') return aMembersCount - bMembersCount;
       }
@@ -146,7 +146,7 @@ export default function ProjectDetailClient({ id }) {
 
     // 2. Skills Filtering
     if (skillFilter && skillFilter !== 'all') {
-      result = result.filter(s => 
+      result = result.filter(s =>
         s.profiles?.profile_skills?.some(ps => ps.skill_id === skillFilter)
       );
     }
@@ -157,7 +157,7 @@ export default function ProjectDetailClient({ id }) {
     });
 
     return result;
-  }, [projectSeekers, deptFilter, skillFilter, sortFilter]);
+  }, [projectSeekers, deptFilter, skillFilter]);
 
   const selectedTeam = useMemo(() => {
     if (selectedTeamId) {
@@ -402,9 +402,9 @@ export default function ProjectDetailClient({ id }) {
         .from('teams')
         .update({ description: editDescription || null })
         .eq('id', selectedTeam.id);
-      
+
       if (error) throw error;
-      
+
       showToast({ title: 'Description updated', variant: 'success' });
       await fetchProject();
       setShowEditDescriptionModal(false);
@@ -752,7 +752,7 @@ export default function ProjectDetailClient({ id }) {
             metadata: { team_id: invite.team_id },
           });
         }
-        
+
         showToast({ title: 'Success', message: 'You have joined the team.', variant: 'success' });
       } else {
         if (ownerId) {
@@ -1003,7 +1003,7 @@ export default function ProjectDetailClient({ id }) {
               onChange={(e) => setDeptFilter(e.target.value)}
             />
           </div>
-          
+
           <div className={styles.filterWrapper}>
             <Select
               id="skill-filter"
@@ -1091,127 +1091,127 @@ export default function ProjectDetailClient({ id }) {
           ) : (
             <>
               <div className={styles.layoutGrid}>
-              {/* Left Pane: Team List */}
-              <div className={styles.leftPane}>
-                <div className={styles.paneHeader}>
-                  <h3>
-                    Teams ({filteredTeams.length})
-                  </h3>
-                  {user && !userHasTeam && profile?.role === 'student' && (
-                    <Button onClick={() => setShowCreateTeamModal(true)} icon={Plus} size="sm">
-                      Create Team
-                    </Button>
-                  )}
-                </div>
+                {/* Left Pane: Team List */}
+                <div className={styles.leftPane}>
+                  <div className={styles.paneHeader}>
+                    <h3>
+                      Teams ({filteredTeams.length})
+                    </h3>
+                    {user && !userHasTeam && profile?.role === 'student' && (
+                      <Button onClick={() => setShowCreateTeamModal(true)} icon={Plus} size="sm">
+                        Create Team
+                      </Button>
+                    )}
+                  </div>
 
-                <div className={styles.teamCardsList}>
-                  {filteredTeams.map((t) => {
-                    const isSelected = selectedTeam && t.id === selectedTeam.id;
-                    const tMembers = allMembers.filter((m) => m.team_id === t.id);
-                    const tManual = allManualMembers.filter((m) => m.team_id === t.id);
-                    const tCount = tMembers.length + tManual.length;
-                    const isTFull = tCount >= project.max_team_size;
+                  <div className={styles.teamCardsList}>
+                    {filteredTeams.map((t) => {
+                      const isSelected = selectedTeam && t.id === selectedTeam.id;
+                      const tMembers = allMembers.filter((m) => m.team_id === t.id);
+                      const tManual = allManualMembers.filter((m) => m.team_id === t.id);
+                      const tCount = tMembers.length + tManual.length;
+                      const isTFull = tCount >= project.max_team_size;
 
-                    // Merge button logic: show only if current user owns a DIFFERENT team in this project
-                    const canRequestMerge = userOwnedTeam
-                      && userOwnedTeam.id !== t.id
-                      && !userTeamPendingMerge
-                      && t.status === 'recruiting';
+                      // Merge button logic: show only if current user owns a DIFFERENT team in this project
+                      const canRequestMerge = userOwnedTeam
+                        && userOwnedTeam.id !== t.id
+                        && !userTeamPendingMerge
+                        && t.status === 'recruiting';
 
-                    // Check combined capacity for the merge button
-                    const myTeamCount = userOwnedTeam
-                      ? allMembers.filter(m => m.team_id === userOwnedTeam.id).length
-                      + allManualMembers.filter(m => m.team_id === userOwnedTeam.id).length
-                      : 0;
-                    const combinedFits = (myTeamCount + tCount) <= project.max_team_size;
+                      // Check combined capacity for the merge button
+                      const myTeamCount = userOwnedTeam
+                        ? allMembers.filter(m => m.team_id === userOwnedTeam.id).length
+                        + allManualMembers.filter(m => m.team_id === userOwnedTeam.id).length
+                        : 0;
+                      const combinedFits = (myTeamCount + tCount) <= project.max_team_size;
 
-                    // Check if there's already a pending merge request involving this pair
-                    const existingMergeWithThisTeam = mergeRequests.some(
-                      mr => mr.status === 'pending' && (
-                        (mr.source_team_id === userOwnedTeam?.id && mr.target_team_id === t.id) ||
-                        (mr.source_team_id === t.id && mr.target_team_id === userOwnedTeam?.id)
-                      )
-                    );
+                      // Check if there's already a pending merge request involving this pair
+                      const existingMergeWithThisTeam = mergeRequests.some(
+                        mr => mr.status === 'pending' && (
+                          (mr.source_team_id === userOwnedTeam?.id && mr.target_team_id === t.id) ||
+                          (mr.source_team_id === t.id && mr.target_team_id === userOwnedTeam?.id)
+                        )
+                      );
 
-                    return (
-                      <Card
-                        key={t.id}
-                        onClick={() => {
-                          setSelectedTeamId(t.id);
-                          setShowMobileDetails(true);
-                        }}
-                        className={`${styles.teamListItemCard} ${isSelected ? styles.teamListItemActive : ''}`}
-                        hoverable
-                      >
-                        <div className={styles.teamCardHeader}>
-                          <h4 className={styles.teamCardOwner}>
-                            {t.profiles?.full_name || 'Anonymous'}&apos;s Team
-                          </h4>
-                          <Badge variant={isTFull ? 'default' : 'success'} size="sm">
-                            {isTFull ? 'Full' : 'Recruiting'}
-                          </Badge>
-                        </div>
-
-                        <div className={styles.teamCardMeta}>
-                          <span className={styles.teamCardDept}>
-                            <Building2 size={12} />
-                            {t.departments?.name || 'Universal'}
-                          </span>
-                          <span className={styles.teamCardSize}>
-                            <Users size={12} />
-                            {tCount} / {project.max_team_size} members
-                          </span>
-                        </div>
-
-                        <div className={styles.teamCardBottom}>
-                          <div className={styles.avatarGroup}>
-                            {tMembers.slice(0, 4).map((m) => (
-                              <div key={m.id} className={styles.avatarGroupItem} title={m.profiles?.full_name}>
-                                <Avatar name={m.profiles?.full_name} src={m.profiles?.avatar_url} size="xs" />
-                              </div>
-                            ))}
-                            {tCount > 4 && (
-                              <span className={styles.avatarGroupMore}>+{tCount - 4}</span>
-                            )}
+                      return (
+                        <Card
+                          key={t.id}
+                          onClick={() => {
+                            setSelectedTeamId(t.id);
+                            setShowMobileDetails(true);
+                          }}
+                          className={`${styles.teamListItemCard} ${isSelected ? styles.teamListItemActive : ''}`}
+                          hoverable
+                        >
+                          <div className={styles.teamCardHeader}>
+                            <h4 className={styles.teamCardOwner}>
+                              {t.profiles?.full_name || 'Anonymous'}&apos;s Team
+                            </h4>
+                            <Badge variant={isTFull ? 'default' : 'success'} size="sm">
+                              {isTFull ? 'Full' : 'Recruiting'}
+                            </Badge>
                           </div>
 
-                          {canRequestMerge && !existingMergeWithThisTeam && combinedFits && (
-                            <button
-                              className={styles.mergeBtn}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setMergeTargetTeam(t);
-                                setShowMergeModal(true);
-                              }}
-                              title="Request to merge your team into this team"
-                            >
-                              <HandHelping size={14} />
-                              <span>Join as Team</span>
-                            </button>
-                          )}
-                          {existingMergeWithThisTeam && (
-                            <Badge variant="warning" size="sm">Merge Pending</Badge>
-                          )}
-                        </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </div>
-              {/* Right Pane: Selected Team Details */}
-              <div className={`${styles.rightPane} ${showMobileDetails ? styles.mobileOpen : ''}`}>
-                {selectedTeam ? (
-                  <div className={styles.teamDetailsCard}>
-                    {/* Mobile Close Button (CSS handles hiding on desktop) */}
-                    <div className={styles.mobileCloseHandle}>
-                      <button onClick={() => setShowMobileDetails(false)} className={styles.mobileCloseBtn}>
-                        <X size={20} />
-                      </button>
-                    </div>
+                          <div className={styles.teamCardMeta}>
+                            <span className={styles.teamCardDept}>
+                              <Building2 size={12} />
+                              {t.departments?.name || 'Universal'}
+                            </span>
+                            <span className={styles.teamCardSize}>
+                              <Users size={12} />
+                              {tCount} / {project.max_team_size} members
+                            </span>
+                          </div>
 
-                    {/* Team Details Header */}
-                    <div className={styles.teamHeader}>
-                      <div>
+                          <div className={styles.teamCardBottom}>
+                            <div className={styles.avatarGroup}>
+                              {tMembers.slice(0, 4).map((m) => (
+                                <div key={m.id} className={styles.avatarGroupItem} title={m.profiles?.full_name}>
+                                  <Avatar name={m.profiles?.full_name} src={m.profiles?.avatar_url} size="xs" />
+                                </div>
+                              ))}
+                              {tCount > 4 && (
+                                <span className={styles.avatarGroupMore}>+{tCount - 4}</span>
+                              )}
+                            </div>
+
+                            {canRequestMerge && !existingMergeWithThisTeam && combinedFits && (
+                              <button
+                                className={styles.mergeBtn}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setMergeTargetTeam(t);
+                                  setShowMergeModal(true);
+                                }}
+                                title="Request to merge your team into this team"
+                              >
+                                <HandHelping size={14} />
+                                <span>Join as Team</span>
+                              </button>
+                            )}
+                            {existingMergeWithThisTeam && (
+                              <Badge variant="warning" size="sm">Merge Pending</Badge>
+                            )}
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
+                {/* Right Pane: Selected Team Details */}
+                <div className={`${styles.rightPane} ${showMobileDetails ? styles.mobileOpen : ''}`}>
+                  {selectedTeam ? (
+                    <div className={styles.teamDetailsCard}>
+                      {/* Mobile Close Button (CSS handles hiding on desktop) */}
+                      <div className={styles.mobileCloseHandle}>
+                        <button onClick={() => setShowMobileDetails(false)} className={styles.mobileCloseBtn}>
+                          <X size={20} />
+                        </button>
+                      </div>
+
+                      {/* Team Details Header */}
+                      <div className={styles.teamHeader}>
+                        <div>
                           <div className={styles.teamDetailsHeader}>
                             <h3 className={styles.sectionTitle}>
                               Team Details
@@ -1243,305 +1243,305 @@ export default function ProjectDetailClient({ id }) {
                               </div>
                             )}
                           </div>
-                        <h2 className={styles.teamTitle}>
-                          {selectedTeam.profiles?.full_name}&apos;s Team Details
-                        </h2>
-                        <p className={styles.teamMeta}>
-                          <Users size={14} /> {totalMembers}/{project.max_team_size} members
-                          {' · '}
-                          <Badge variant={selectedTeam.status === 'recruiting' ? 'success' : 'default'} size="sm">
-                            {selectedTeam.status === 'recruiting' ? 'Recruiting' : 'Closed'}
-                          </Badge>
-                          {selectedTeam.departments?.name && (
-                            <>
-                              {' · '}
-                              <Badge variant="accent" size="sm">
-                                {selectedTeam.departments.name}
-                              </Badge>
-                            </>
-                          )}
-                        </p>
-                      </div>
-
-                      <div className={styles.teamActions}>
-                        {pendingInviteForSelectedTeam && !isMember && (
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <Button
-                              onClick={() => handleProjectInviteAction(pendingInviteForSelectedTeam, 'accepted')}
-                              loading={actionLoading}
-                              icon={Check}
-                              size="sm"
-                              variant="success"
-                            >
-                              Accept Invite
-                            </Button>
-                            <Button
-                              onClick={() => handleProjectInviteAction(pendingInviteForSelectedTeam, 'rejected')}
-                              loading={actionLoading}
-                              icon={X}
-                              size="sm"
-                              variant="ghost"
-                            >
-                              Decline
-                            </Button>
-                          </div>
-                        )}
-                        {!pendingInviteForSelectedTeam && !isMember && !userTeamRequest && !isFull && selectedTeam.status === 'recruiting' && user && !userHasTeam && (
-                          <Button onClick={() => setShowJoinModal(true)} icon={UserPlus} size="sm">
-                            Request to Join
-                          </Button>
-                        )}
-                        {!isMember && !user && (
-                          <Link href={`/login?redirect=/projects/${id}`}>
-                            <Button size="sm">Sign In to Join</Button>
-                          </Link>
-                        )}
-                        {userTeamRequest && (
-                          <Badge variant="warning">Request Pending</Badge>
-                        )}
-                        {isOwner && !isFull && (
-                          <Button onClick={() => setShowAddMemberModal(true)} variant="secondary" icon={Plus} size="sm">
-                            Add Member
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Unregistered User Prompt */}
-                    {!user && (
-                      <Card style={{ padding: '16px', marginBottom: '16px', backgroundColor: 'var(--color-surface)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <Lock size={20} style={{ color: 'var(--color-action)' }} />
-                          <span style={{ fontSize: 'var(--text-sm)', lineHeight: '1.5' }}>
-                            Please <Link href={`/login?redirect=/projects/${id}`} style={{ fontWeight: 'bold', textDecoration: 'underline', color: 'var(--color-action)' }}>Sign In</Link> to view full contact details and request to join this team.
-                          </span>
+                          <h2 className={styles.teamTitle}>
+                            {selectedTeam.profiles?.full_name}&apos;s Team Details
+                          </h2>
+                          <p className={styles.teamMeta}>
+                            <Users size={14} /> {totalMembers}/{project.max_team_size} members
+                            {' · '}
+                            <Badge variant={selectedTeam.status === 'recruiting' ? 'success' : 'default'} size="sm">
+                              {selectedTeam.status === 'recruiting' ? 'Recruiting' : 'Closed'}
+                            </Badge>
+                            {selectedTeam.departments?.name && (
+                              <>
+                                {' · '}
+                                <Badge variant="accent" size="sm">
+                                  {selectedTeam.departments.name}
+                                </Badge>
+                              </>
+                            )}
+                          </p>
                         </div>
-                      </Card>
-                    )}
 
-                    {/* Members List */}
-                    <div className={styles.membersList}>
-                      {teamMembers.map((m) => {
-                        const memberProfile = m.profiles;
-                        const canViewFullDetails = !!user;
-                        const displayName = canViewFullDetails ? memberProfile?.full_name : memberProfile?.full_name?.split(' ')[0];
-                        const profileLink = canViewFullDetails ? `/profile/${memberProfile?.id}` : `/login?redirect=/projects/${id}`;
+                        <div className={styles.teamActions}>
+                          {pendingInviteForSelectedTeam && !isMember && (
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <Button
+                                onClick={() => handleProjectInviteAction(pendingInviteForSelectedTeam, 'accepted')}
+                                loading={actionLoading}
+                                icon={Check}
+                                size="sm"
+                                variant="success"
+                              >
+                                Accept Invite
+                              </Button>
+                              <Button
+                                onClick={() => handleProjectInviteAction(pendingInviteForSelectedTeam, 'rejected')}
+                                loading={actionLoading}
+                                icon={X}
+                                size="sm"
+                                variant="ghost"
+                              >
+                                Decline
+                              </Button>
+                            </div>
+                          )}
+                          {!pendingInviteForSelectedTeam && !isMember && !userTeamRequest && !isFull && selectedTeam.status === 'recruiting' && user && !userHasTeam && (
+                            <Button onClick={() => setShowJoinModal(true)} icon={UserPlus} size="sm">
+                              Request to Join
+                            </Button>
+                          )}
+                          {!isMember && !user && (
+                            <Link href={`/login?redirect=/projects/${id}`}>
+                              <Button size="sm">Sign In to Join</Button>
+                            </Link>
+                          )}
+                          {userTeamRequest && (
+                            <Badge variant="warning">Request Pending</Badge>
+                          )}
+                          {isOwner && !isFull && (
+                            <Button onClick={() => setShowAddMemberModal(true)} variant="secondary" icon={Plus} size="sm">
+                              Add Member
+                            </Button>
+                          )}
+                        </div>
+                      </div>
 
-                        return (
-                          <Card key={m.id} className={styles.memberCard}>
-                            <div className={styles.memberInfo}>
-                              <Link href={profileLink} className={styles.memberLink}>
-                                <Avatar name={memberProfile?.full_name} src={memberProfile?.avatar_url} size="md" />
-                              </Link>
-                              <div>
-                                <div className={styles.memberNameRow}>
-                                  <Link href={profileLink} className={styles.memberNameLink}>
-                                    <span className={styles.memberName}>{displayName}</span>
-                                  </Link>
-                                  {m.role === 'owner' && (
-                                    <Badge variant="accent" size="sm">
-                                      <Crown size={10} /> Owner
-                                    </Badge>
+                      {/* Unregistered User Prompt */}
+                      {!user && (
+                        <Card style={{ padding: '16px', marginBottom: '16px', backgroundColor: 'var(--color-surface)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <Lock size={20} style={{ color: 'var(--color-action)' }} />
+                            <span style={{ fontSize: 'var(--text-sm)', lineHeight: '1.5' }}>
+                              Please <Link href={`/login?redirect=/projects/${id}`} style={{ fontWeight: 'bold', textDecoration: 'underline', color: 'var(--color-action)' }}>Sign In</Link> to view full contact details and request to join this team.
+                            </span>
+                          </div>
+                        </Card>
+                      )}
+
+                      {/* Members List */}
+                      <div className={styles.membersList}>
+                        {teamMembers.map((m) => {
+                          const memberProfile = m.profiles;
+                          const canViewFullDetails = !!user;
+                          const displayName = canViewFullDetails ? memberProfile?.full_name : memberProfile?.full_name?.split(' ')[0];
+                          const profileLink = canViewFullDetails ? `/profile/${memberProfile?.id}` : `/login?redirect=/projects/${id}`;
+
+                          return (
+                            <Card key={m.id} className={styles.memberCard}>
+                              <div className={styles.memberInfo}>
+                                <Link href={profileLink} className={styles.memberLink}>
+                                  <Avatar name={memberProfile?.full_name} src={memberProfile?.avatar_url} size="md" />
+                                </Link>
+                                <div>
+                                  <div className={styles.memberNameRow}>
+                                    <Link href={profileLink} className={styles.memberNameLink}>
+                                      <span className={styles.memberName}>{displayName}</span>
+                                    </Link>
+                                    {m.role === 'owner' && (
+                                      <Badge variant="accent" size="sm">
+                                        <Crown size={10} /> Owner
+                                      </Badge>
+                                    )}
+                                    {canViewFullDetails && memberProfile?.github_url && (
+                                      <a
+                                        href={memberProfile.github_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={styles.socialIcon}
+                                        title="GitHub"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <Github size={14} />
+                                      </a>
+                                    )}
+                                    {canViewFullDetails && memberProfile?.linkedin_url && (
+                                      <a
+                                        href={memberProfile.linkedin_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`${styles.socialIcon} ${styles.socialIconLinkedin}`}
+                                        title="LinkedIn"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <Linkedin size={14} />
+                                      </a>
+                                    )}
+                                    {canViewFullDetails && memberProfile?.whatsapp_number && (
+                                      <a
+                                        href={`https://wa.me/${memberProfile.whatsapp_number.replace(/\D/g, '')}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`${styles.socialIcon} ${styles.socialIconWhatsapp}`}
+                                        title="WhatsApp"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <Whatsapp size={14} />
+                                      </a>
+                                    )}
+                                  </div>
+                                  {canViewFullDetails && (memberProfile?.levels?.name || memberProfile?.departments?.name) && (
+                                    <p className={styles.memberLevel}>
+                                      {[memberProfile?.levels?.name, memberProfile?.departments?.name].filter(Boolean).join(', ')}
+                                    </p>
                                   )}
-                                  {canViewFullDetails && memberProfile?.github_url && (
-                                    <a
-                                      href={memberProfile.github_url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className={styles.socialIcon}
-                                      title="GitHub"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      <Github size={14} />
-                                    </a>
+                                  {canViewFullDetails && memberProfile?.profile_skills?.length > 0 && (
+                                    <div className={styles.memberSkills}>
+                                      {memberProfile.profile_skills.map((ps) => (
+                                        <Badge key={ps.skill_id} variant="default" size="sm">
+                                          {ps.skills?.name}
+                                        </Badge>
+                                      ))}
+                                    </div>
                                   )}
-                                  {canViewFullDetails && memberProfile?.linkedin_url && (
-                                    <a
-                                      href={memberProfile.linkedin_url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className={`${styles.socialIcon} ${styles.socialIconLinkedin}`}
-                                      title="LinkedIn"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      <Linkedin size={14} />
-                                    </a>
-                                  )}
-                                  {canViewFullDetails && memberProfile?.whatsapp_number && (
-                                    <a
-                                      href={`https://wa.me/${memberProfile.whatsapp_number.replace(/\D/g, '')}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className={`${styles.socialIcon} ${styles.socialIconWhatsapp}`}
-                                      title="WhatsApp"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      <Whatsapp size={14} />
-                                    </a>
+                                  {isMember && memberProfile?.whatsapp_number && (
+                                    <div className={styles.memberContactInfo}>
+                                      <a
+                                        href={`https://wa.me/${memberProfile.whatsapp_number.replace(/\D/g, '')}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={styles.contactBadge}
+                                        title="WhatsApp"
+                                      >
+                                        <Whatsapp size={12} /> {memberProfile.whatsapp_number}
+                                      </a>
+                                    </div>
                                   )}
                                 </div>
-                                {canViewFullDetails && (memberProfile?.levels?.name || memberProfile?.departments?.name) && (
-                                  <p className={styles.memberLevel}>
-                                    {[memberProfile?.levels?.name, memberProfile?.departments?.name].filter(Boolean).join(', ')}
-                                  </p>
-                                )}
-                                {canViewFullDetails && memberProfile?.profile_skills?.length > 0 && (
-                                  <div className={styles.memberSkills}>
-                                    {memberProfile.profile_skills.map((ps) => (
-                                      <Badge key={ps.skill_id} variant="default" size="sm">
-                                        {ps.skills?.name}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                )}
-                                {isMember && memberProfile?.whatsapp_number && (
+                              </div>
+                              {isOwner && m.user_id !== user.id && (
+                                <button
+                                  className={styles.removeBtn}
+                                  onClick={() => handleRemoveMember(m.id, m.user_id)}
+                                  title="Remove member"
+                                >
+                                  <UserMinus size={16} />
+                                </button>
+                              )}
+                            </Card>
+                          );
+                        })}
+
+                        {/* Manual Members */}
+                        {teamManualMembers.map((m) => (
+                          <Card key={m.id} className={styles.memberCard}>
+                            <div className={styles.memberInfo}>
+                              <Avatar name={m.full_name} size="md" />
+                              <div>
+                                <div className={styles.memberNameRow}>
+                                  <span className={styles.memberName}>{m.full_name}</span>
+                                </div>
+                                {user && m.notes && <p className={styles.memberLevel}>{m.notes}</p>}
+                                {isMember && m.whatsapp_number && (
                                   <div className={styles.memberContactInfo}>
                                     <a
-                                      href={`https://wa.me/${memberProfile.whatsapp_number.replace(/\D/g, '')}`}
+                                      href={`https://wa.me/${m.whatsapp_number.replace(/\D/g, '')}`}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className={styles.contactBadge}
                                       title="WhatsApp"
                                     >
-                                      <Whatsapp size={12} /> {memberProfile.whatsapp_number}
+                                      <Whatsapp size={12} /> {m.whatsapp_number}
                                     </a>
                                   </div>
                                 )}
                               </div>
                             </div>
-                            {isOwner && m.user_id !== user.id && (
-                              <button
-                                className={styles.removeBtn}
-                                onClick={() => handleRemoveMember(m.id, m.user_id)}
-                                title="Remove member"
-                              >
-                                <UserMinus size={16} />
-                              </button>
+                            {isOwner && (
+                              <div style={{ display: 'flex', gap: '8px' }}>
+                                <button
+                                  className={styles.removeBtn}
+                                  onClick={() => openEditManualMemberModal(m)}
+                                  title="Edit member"
+                                  style={{ color: 'var(--color-text-muted)' }}
+                                >
+                                  <Pencil size={16} />
+                                </button>
+                                <button
+                                  className={styles.removeBtn}
+                                  onClick={() => handleRemoveMember(m.id, null, true)}
+                                  title="Remove member"
+                                >
+                                  <UserMinus size={16} />
+                                </button>
+                              </div>
                             )}
-                          </Card>
-                        );
-                      })}
-
-                      {/* Manual Members */}
-                      {teamManualMembers.map((m) => (
-                        <Card key={m.id} className={styles.memberCard}>
-                          <div className={styles.memberInfo}>
-                            <Avatar name={m.full_name} size="md" />
-                            <div>
-                              <div className={styles.memberNameRow}>
-                                <span className={styles.memberName}>{m.full_name}</span>
-                              </div>
-                              {user && m.notes && <p className={styles.memberLevel}>{m.notes}</p>}
-                              {isMember && m.whatsapp_number && (
-                                <div className={styles.memberContactInfo}>
-                                  <a
-                                    href={`https://wa.me/${m.whatsapp_number.replace(/\D/g, '')}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={styles.contactBadge}
-                                    title="WhatsApp"
-                                  >
-                                    <Whatsapp size={12} /> {m.whatsapp_number}
-                                  </a>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          {isOwner && (
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <button
-                                className={styles.removeBtn}
-                                onClick={() => openEditManualMemberModal(m)}
-                                title="Edit member"
-                                style={{ color: 'var(--color-text-muted)' }}
-                              >
-                                <Pencil size={16} />
-                              </button>
-                              <button
-                                className={styles.removeBtn}
-                                onClick={() => handleRemoveMember(m.id, null, true)}
-                                title="Remove member"
-                              >
-                                <UserMinus size={16} />
-                              </button>
-                            </div>
-                          )}
-                        </Card>
-                      ))}
-                    </div>
-
-                    {/* Pending Requests (owner only) */}
-                    {isOwner && teamRequests.length > 0 && (
-                      <div className={styles.requestsSection}>
-                        <h3 className={styles.requestsTitle}>
-                          Pending Requests
-                          <Badge variant="warning" size="sm">{teamRequests.length}</Badge>
-                        </h3>
-                        {teamRequests.map((req) => (
-                          <Card key={req.id} className={styles.requestCard}>
-                            <div className={styles.requestInfo}>
-                              <Avatar name={req.profiles?.full_name} src={req.profiles?.avatar_url} size="sm" />
-                              <div>
-                                <span className={styles.requestName}>{req.profiles?.full_name}</span>
-                                {req.message && (
-                                  <p className={styles.requestMsg}>
-                                    <MessageSquare size={12} /> {req.message}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            <div className={styles.requestActions}>
-                              <button
-                                className={styles.acceptBtn}
-                                onClick={() => handleRequestAction(req.id, 'accepted', req.user_id)}
-                                disabled={isFull}
-                                title={isFull ? 'Team is full' : 'Accept'}
-                              >
-                                <Check size={16} />
-                              </button>
-                              <button
-                                className={styles.rejectBtn}
-                                onClick={() => handleRequestAction(req.id, 'rejected', req.user_id)}
-                                title="Reject"
-                              >
-                                <X size={16} />
-                              </button>
-                            </div>
                           </Card>
                         ))}
                       </div>
-                    )}
 
-                    {/* Actions (Leave/Delete) */}
-                    {isMember && (
-                      <div className={styles.ownerActions}>
-                        {isOwner ? (
-                          <Button variant="danger" icon={Trash2} size="sm" onClick={handleDeleteTeam}>
-                            Delete Team
-                          </Button>
-                        ) : (
-                          <Button variant="ghost" icon={LogOut} size="sm" onClick={handleLeaveTeam}>
-                            Leave Team
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <Card className={styles.noTeamSelectedCard}>
-                    <Users size={32} className={styles.noTeamSelectedIcon} />
-                    <h3>No team selected</h3>
-                    <p>Please select a team from the list on the left to view members and details.</p>
-                  </Card>
-                )}
+                      {/* Pending Requests (owner only) */}
+                      {isOwner && teamRequests.length > 0 && (
+                        <div className={styles.requestsSection}>
+                          <h3 className={styles.requestsTitle}>
+                            Pending Requests
+                            <Badge variant="warning" size="sm">{teamRequests.length}</Badge>
+                          </h3>
+                          {teamRequests.map((req) => (
+                            <Card key={req.id} className={styles.requestCard}>
+                              <div className={styles.requestInfo}>
+                                <Avatar name={req.profiles?.full_name} src={req.profiles?.avatar_url} size="sm" />
+                                <div>
+                                  <span className={styles.requestName}>{req.profiles?.full_name}</span>
+                                  {req.message && (
+                                    <p className={styles.requestMsg}>
+                                      <MessageSquare size={12} /> {req.message}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className={styles.requestActions}>
+                                <button
+                                  className={styles.acceptBtn}
+                                  onClick={() => handleRequestAction(req.id, 'accepted', req.user_id)}
+                                  disabled={isFull}
+                                  title={isFull ? 'Team is full' : 'Accept'}
+                                >
+                                  <Check size={16} />
+                                </button>
+                                <button
+                                  className={styles.rejectBtn}
+                                  onClick={() => handleRequestAction(req.id, 'rejected', req.user_id)}
+                                  title="Reject"
+                                >
+                                  <X size={16} />
+                                </button>
+                              </div>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Actions (Leave/Delete) */}
+                      {isMember && (
+                        <div className={styles.ownerActions}>
+                          {isOwner ? (
+                            <Button variant="danger" icon={Trash2} size="sm" onClick={handleDeleteTeam}>
+                              Delete Team
+                            </Button>
+                          ) : (
+                            <Button variant="ghost" icon={LogOut} size="sm" onClick={handleLeaveTeam}>
+                              Leave Team
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <Card className={styles.noTeamSelectedCard}>
+                      <Users size={32} className={styles.noTeamSelectedIcon} />
+                      <h3>No team selected</h3>
+                      <p>Please select a team from the list on the left to view members and details.</p>
+                    </Card>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Mobile Backdrop */}
-            <div 
-              className={`${styles.mobileBackdrop} ${showMobileDetails ? styles.open : ''}`}
-              onClick={() => setShowMobileDetails(false)}
-            />
+              {/* Mobile Backdrop */}
+              <div
+                className={`${styles.mobileBackdrop} ${showMobileDetails ? styles.open : ''}`}
+                onClick={() => setShowMobileDetails(false)}
+              />
             </>
           )}
         </div>
