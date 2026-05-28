@@ -23,6 +23,22 @@ vi.mock('@/lib/rateLimit', () => ({
   getClientIp: vi.fn().mockReturnValue('127.0.0.1'),
 }));
 
+// Mock Supabase
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: vi.fn(() => ({
+    from: vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({
+            data: { email: 'mocked@example.com' },
+            error: null
+          })
+        })
+      })
+    })
+  }))
+}));
+
 // Helper to create a mock Request object
 function createMockRequest(body) {
   return {
@@ -43,13 +59,15 @@ describe('POST /api/email', () => {
     process.env.SMTP_HOST = 'smtp.example.com';
     process.env.SMTP_USER = 'test@example.com';
     process.env.SMTP_PASS = 'password';
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://localhost:54321';
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'mock-key';
   });
 
-  it('returns 400 if recipientEmail is missing', async () => {
+  it('returns 400 if recipientId is missing', async () => {
     const req = createMockRequest({ type: 'request_received' });
     const response = await POST(req);
     expect(NextResponse.json).toHaveBeenCalledWith(
-      { error: 'Recipient email is required' },
+      { error: 'Recipient ID is required' },
       { status: 400 }
     );
   });
@@ -61,7 +79,7 @@ describe('POST /api/email', () => {
     // Suppress console.warn for this test
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
 
-    const req = createMockRequest({ type: 'request_received', recipientEmail: 'test@test.com' });
+    const req = createMockRequest({ type: 'request_received', recipientId: 'test-id' });
     const response = await POST(req);
 
     expect(warnSpy).toHaveBeenCalled();
@@ -71,7 +89,7 @@ describe('POST /api/email', () => {
   });
 
   it('returns 400 for invalid notification type', async () => {
-    const req = createMockRequest({ type: 'invalid_type', recipientEmail: 'test@test.com' });
+    const req = createMockRequest({ type: 'invalid_type', recipientId: 'test-id' });
     const response = await POST(req);
     expect(NextResponse.json).toHaveBeenCalledWith(
       { error: 'Invalid notification type' },
@@ -82,7 +100,7 @@ describe('POST /api/email', () => {
   it('sends email successfully for request_received', async () => {
     const req = createMockRequest({
       type: 'request_received',
-      recipientEmail: 'owner@example.com',
+      recipientId: 'test-id',
       recipientName: 'Owner',
       actorName: 'Requester',
       projectName: 'Test Project',
@@ -100,7 +118,7 @@ describe('POST /api/email', () => {
 
     const req = createMockRequest({
       type: 'request_accepted',
-      recipientEmail: 'requester@example.com',
+      recipientId: 'test-id',
     });
     const response = await POST(req);
 
@@ -116,7 +134,7 @@ describe('POST /api/email', () => {
   it('sends email for invite_received', async () => {
     const req = createMockRequest({
       type: 'invite_received',
-      recipientEmail: 'student@example.com',
+      recipientId: 'test-id',
       recipientName: 'Student',
       actorName: 'Team Owner',
       projectName: 'Graduation Project',
@@ -139,7 +157,7 @@ describe('POST /api/email', () => {
   it('sends email for invite_accepted', async () => {
     const req = createMockRequest({
       type: 'invite_accepted',
-      recipientEmail: 'owner@example.com',
+      recipientId: 'test-id',
       recipientName: 'Team Owner',
       actorName: 'Student',
       projectName: 'Graduation Project',
@@ -159,7 +177,7 @@ describe('POST /api/email', () => {
   it('sends email for invite_rejected', async () => {
     const req = createMockRequest({
       type: 'invite_rejected',
-      recipientEmail: 'owner@example.com',
+      recipientId: 'test-id',
       recipientName: 'Team Owner',
       actorName: 'Student',
       projectName: 'Graduation Project',
@@ -180,7 +198,7 @@ describe('POST /api/email', () => {
   it('sends invite_received email without message', async () => {
     const req = createMockRequest({
       type: 'invite_received',
-      recipientEmail: 'student@example.com',
+      recipientId: 'test-id',
       recipientName: 'Student',
       actorName: 'Team Owner',
       projectName: 'Test Project',
