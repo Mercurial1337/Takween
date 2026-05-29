@@ -32,16 +32,11 @@ export default function ProfileClient({ id }) {
         // Fetch profile and level name
         const { data: profileRows, error: profileErr } = await supabase
           .from('profiles')
-          .select('*, levels:level_id (name), contact_info(email, whatsapp_number)')
+          .select('*, levels:level_id (name)')
           .eq('id', id);
 
         if (profileErr) throw profileErr;
         let profileData = profileRows?.[0] || null;
-        if (profileData && profileData.contact_info) {
-          profileData.email = profileData.contact_info.email;
-          profileData.whatsapp_number = profileData.contact_info.whatsapp_number;
-          delete profileData.contact_info;
-        }
         setProfile(profileData);
 
         // Fetch user's skills

@@ -221,6 +221,7 @@ export default function RegisterForm() {
       const { error: profileError } = await supabase.from('profiles').upsert({
         id: userId,
         full_name: dataToValidate.full_name,
+        whatsapp_number: formattedWhatsapp,
         level_id: dataToValidate.level_id || null,
         department_id: dataToValidate.department_id || null,
         linkedin_url: dataToValidate.linkedin_url || null,
@@ -231,7 +232,6 @@ export default function RegisterForm() {
         await supabase.from('contact_info').upsert({
           id: userId,
           email: dataToValidate.email,
-          whatsapp_number: formattedWhatsapp,
         });
       }
 

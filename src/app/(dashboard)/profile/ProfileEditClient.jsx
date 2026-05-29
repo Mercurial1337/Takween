@@ -159,6 +159,7 @@ export default function ProfileEditClient() {
         .from('profiles')
         .update({
           full_name: formData.full_name,
+          whatsapp_number: formattedWhatsapp,
           level_id: formData.level_id || null,
           department_id: finalDeptId,
           linkedin_url: formattedLinkedin || null,
@@ -167,16 +168,6 @@ export default function ProfileEditClient() {
         .eq('id', user.id);
 
       if (error) throw error;
-
-      // Update contact info
-      const { error: contactErr } = await supabase
-        .from('contact_info')
-        .update({
-          whatsapp_number: formattedWhatsapp
-        })
-        .eq('id', user.id);
-
-      if (contactErr) throw contactErr;
 
       // Update skills — delete all and re-insert
       await supabase.from('profile_skills').delete().eq('profile_id', user.id);
@@ -239,7 +230,6 @@ export default function ProfileEditClient() {
           <Avatar name={profile?.full_name} src={profile?.avatar_url} size="xl" />
           <div>
             <h2 className={styles.profileName}>{profile?.full_name}</h2>
-            <p className={styles.profileEmail}>{profile?.email}</p>
           </div>
         </div>
 

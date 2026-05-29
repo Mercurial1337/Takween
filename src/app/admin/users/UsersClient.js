@@ -16,10 +16,9 @@ import styles from '../projects/page.module.css';
 const PAGE_SIZE = 10;
 
 function downloadCSV(data, filename) {
-  const headers = ['Name', 'Email', 'Role', 'WhatsApp', 'Joined'];
+  const headers = ['Name', 'Role', 'WhatsApp', 'Joined'];
   const rows = data.map(u => [
     u.full_name,
-    u.email,
     u.role,
     u.whatsapp_number || '',
     new Date(u.created_at).toLocaleDateString(),
@@ -61,12 +60,12 @@ export default function UsersClient() {
       const to = from + PAGE_SIZE - 1;
 
       let query = supabase
-        .from('admin_users_view')
-        .select('id, full_name, email, role, avatar_url, whatsapp_number, created_at', { count: 'exact' })
+        .from('profiles')
+        .select('id, full_name, role, avatar_url, whatsapp_number, created_at', { count: 'exact' })
         .order('created_at', { ascending: false });
 
       if (searchDebounced) {
-        query = query.or(`full_name.ilike.%${searchDebounced}%,email.ilike.%${searchDebounced}%`);
+        query = query.or(`full_name.ilike.%${searchDebounced}%`);
       }
 
       const { data, count, error } = await query.range(from, to);
@@ -105,9 +104,9 @@ export default function UsersClient() {
 
   const handleExport = async () => {
     try {
-      let query = supabase.from('admin_users_view').select('full_name, email, role, whatsapp_number, created_at').order('created_at', { ascending: false });
+      let query = supabase.from('profiles').select('full_name, role, whatsapp_number, created_at').order('created_at', { ascending: false });
       if (searchDebounced) {
-        query = query.or(`full_name.ilike.%${searchDebounced}%,email.ilike.%${searchDebounced}%`);
+        query = query.or(`full_name.ilike.%${searchDebounced}%`);
       }
       const { data } = await query;
       if (data) downloadCSV(data, 'takween_users.csv');
@@ -128,7 +127,7 @@ export default function UsersClient() {
       <div style={{ marginBottom: '16px' }}>
         <Input
           id="user-search"
-          placeholder="Search by name or email..."
+          placeholder="Search by name..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           icon={Search}
@@ -151,7 +150,7 @@ export default function UsersClient() {
                     <Avatar src={u.avatar_url} name={u.full_name} size="sm" />
                     <div>
                       <p className={styles.rowTitle}>{u.full_name}</p>
-                      <p className={styles.rowMeta}>{u.email} · Joined {formatRelativeTime(u.created_at)}</p>
+                      <p className={styles.rowMeta}>Joined {formatRelativeTime(u.created_at)}</p>
                     </div>
                   </div>
                 </div>

@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
 
     const { data: fetchResult, error } = await supabase
       .from('profiles')
-      .select('*, contact_info(email, whatsapp_number)')
+      .select('*')
       .eq('id', currentUser.id)
 
     if (error) {
@@ -30,17 +30,13 @@ export function AuthProvider({ children }) {
     }
 
     let data = fetchResult && fetchResult.length > 0 ? fetchResult[0] : null;
-    if (data && data.contact_info) {
-      data.email = data.contact_info.email;
-      data.whatsapp_number = data.contact_info.whatsapp_number;
-      delete data.contact_info;
-    }
 
     if (!data && currentUser.user_metadata && currentUser.user_metadata.full_name) {
       const meta = currentUser.user_metadata;
       const newProfile = {
         id: currentUser.id,
         full_name: meta.full_name || currentUser.email?.split('@')[0] || 'Student',
+        whatsapp_number: meta.whatsapp_number || '',
         level_id: meta.level_id || null,
         department_id: meta.department_id || null,
         linkedin_url: meta.linkedin_url || null,
@@ -51,7 +47,6 @@ export function AuthProvider({ children }) {
       const newContact = {
         id: currentUser.id,
         email: currentUser.email,
-        whatsapp_number: meta.whatsapp_number || '',
       };
 
       const { error: upsertError } = await supabase
