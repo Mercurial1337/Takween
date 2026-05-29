@@ -343,7 +343,7 @@ export default function ProjectDetailClient({ id }) {
 
           const { data: memberData } = await supabase
             .from('team_members')
-            .select('*, profiles:user_id (id, full_name, avatar_url, level_id, levels:level_id (name), department_id, departments:department_id (name), linkedin_url, github_url, profile_skills (skill_id, skills (name)))')
+            .select('*, profiles:user_id (id, full_name, avatar_url, whatsapp_number, level_id, levels:level_id (name), department_id, departments:department_id (name), linkedin_url, github_url, profile_skills (skill_id, skills (name)))')
             .in('team_id', teamIds)
             .order('joined_at');
           if (memberData) setAllMembers(memberData);
@@ -406,7 +406,7 @@ export default function ProjectDetailClient({ id }) {
       // Get project seekers (available students)
       const { data: seekersData } = await supabase
         .from('project_seekers')
-        .select('*, profiles:user_id (id, full_name, avatar_url, level_id, levels:level_id (name), department_id, departments:department_id (name), linkedin_url, github_url, profile_skills (skill_id, skills (name)))')
+        .select('*, profiles:user_id (id, full_name, avatar_url, whatsapp_number, level_id, levels:level_id (name), department_id, departments:department_id (name), linkedin_url, github_url, profile_skills (skill_id, skills (name)))')
         .eq('project_id', id)
         .order('created_at', { ascending: false });
       if (seekersData) setProjectSeekers(seekersData);
@@ -1470,7 +1470,7 @@ export default function ProjectDetailClient({ id }) {
                                         <Linkedin size={14} />
                                       </a>
                                     )}
-                                    {canViewFullDetails && memberProfile?.whatsapp_number && (
+                                    {memberProfile?.whatsapp_number && (
                                       <a
                                         href={`https://wa.me/${memberProfile.whatsapp_number.replace(/\D/g, '')}`}
                                         target="_blank"
@@ -1497,7 +1497,7 @@ export default function ProjectDetailClient({ id }) {
                                       ))}
                                     </div>
                                   )}
-                                  {isMember && memberProfile?.whatsapp_number && (
+                                  {memberProfile?.whatsapp_number && (
                                     <div className={styles.memberContactInfo}>
                                       <a
                                         href={`https://wa.me/${memberProfile.whatsapp_number.replace(/\D/g, '')}`}
@@ -1535,7 +1535,7 @@ export default function ProjectDetailClient({ id }) {
                                   <span className={styles.memberName}>{m.full_name}</span>
                                 </div>
                                 {user && m.notes && <p className={styles.memberLevel}>{m.notes}</p>}
-                                {isMember && m.whatsapp_number && (
+                                {m.whatsapp_number && (
                                   <div className={styles.memberContactInfo}>
                                     <a
                                       href={`https://wa.me/${m.whatsapp_number.replace(/\D/g, '')}`}
