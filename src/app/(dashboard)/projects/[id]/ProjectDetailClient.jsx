@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Users, Building2, ArrowLeft, Plus, UserPlus, UserMinus,
-  Crown, Trash2, LogOut, MessageSquare, Check, X, HandHelping, AlertTriangle, Send, Lock
+  Crown, Trash2, LogOut, MessageSquare, Check, X, HandHelping, AlertTriangle, Send, Lock, Pencil
 } from 'lucide-react';
 import { Github, Linkedin, Whatsapp } from '@/components/ui/Icons/Icons';
 import { createClient } from '@/lib/supabase/client';
@@ -59,6 +59,13 @@ export default function ProjectDetailClient({ id }) {
   const [addMemberEmail, setAddMemberEmail] = useState('');
   const [manualName, setManualName] = useState('');
   const [manualWhatsapp, setManualWhatsapp] = useState('');
+
+  // Edit manual member state
+  const [showEditManualMemberModal, setShowEditManualMemberModal] = useState(false);
+  const [editManualId, setEditManualId] = useState('');
+  const [editManualName, setEditManualName] = useState('');
+  const [editManualWhatsapp, setEditManualWhatsapp] = useState('');
+  const [editManualNotes, setEditManualNotes] = useState('');
 
   // Merge request state
   const [mergeRequests, setMergeRequests] = useState([]);
@@ -574,6 +581,39 @@ export default function ProjectDetailClient({ id }) {
         });
       }
       showToast({ title: 'Member removed', variant: 'success' });
+      await fetchProject();
+    } catch (err) {
+      showToast({ title: 'Error', message: err.message, variant: 'error' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const openEditManualMemberModal = (member) => {
+    setEditManualId(member.id);
+    setEditManualName(member.full_name || '');
+    setEditManualWhatsapp(member.whatsapp_number || '');
+    setEditManualNotes(member.notes || '');
+    setShowEditManualMemberModal(true);
+  };
+
+  const handleEditManualMember = async (e) => {
+    if (e) e.preventDefault();
+    setActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from('manual_members')
+        .update({
+          full_name: editManualName,
+          whatsapp_number: editManualWhatsapp || null,
+          notes: editManualNotes || null
+        })
+        .eq('id', editManualId);
+
+      if (error) throw error;
+
+      showToast({ title: 'Member details updated', variant: 'success' });
+      setShowEditManualMemberModal(false);
       await fetchProject();
     } catch (err) {
       showToast({ title: 'Error', message: err.message, variant: 'error' });
@@ -1285,13 +1325,23 @@ export default function ProjectDetailClient({ id }) {
                             </div>
                           </div>
                           {isOwner && (
-                            <button
-                              className={styles.removeBtn}
-                              onClick={() => handleRemoveMember(m.id, null, true)}
-                              title="Remove member"
-                            >
-                              <UserMinus size={16} />
-                            </button>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button
+                                className={styles.removeBtn}
+                                onClick={() => openEditManualMemberModal(m)}
+                                title="Edit member"
+                                style={{ color: 'var(--color-text-muted)' }}
+                              >
+                                <Pencil size={16} />
+                              </button>
+                              <button
+                                className={styles.removeBtn}
+                                onClick={() => handleRemoveMember(m.id, null, true)}
+                                title="Remove member"
+                              >
+                                <UserMinus size={16} />
+                              </button>
+                            </div>
                           )}
                         </Card>
                       ))}
@@ -1789,6 +1839,47 @@ export default function ProjectDetailClient({ id }) {
             </div>
             <div className={styles.modalActions}>
               <Button type="button" variant="outline" onClick={() => setShowEditDescriptionModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" loading={actionLoading}>
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {/* Edit Manual Member Modal */}
+      {showEditManualMemberModal && (
+        <Modal
+          isOpen={true}
+          title="Edit Manual Member"
+          onClose={() => setShowEditManualMemberModal(false)}
+        >
+          <form onSubmit={handleEditManualMember} className={styles.modalForm}>
+            <div className={styles.modalFields}>
+              <Input
+                id="edit-manual-name"
+                label="Full Name"
+                value={editManualName}
+                onChange={(e) => setEditManualName(e.target.value)}
+                required
+              />
+              <Input
+                id="edit-manual-whatsapp"
+                label="WhatsApp Number (optional)"
+                value={editManualWhatsapp}
+                onChange={(e) => setEditManualWhatsapp(e.target.value)}
+              />
+              <Input
+                id="edit-manual-notes"
+                label="Skills / Notes (optional)"
+                value={editManualNotes}
+                onChange={(e) => setEditManualNotes(e.target.value)}
+              />
+            </div>
+            <div className={styles.modalActions}>
+              <Button type="button" variant="outline" onClick={() => setShowEditManualMemberModal(false)}>
                 Cancel
               </Button>
               <Button type="submit" loading={actionLoading}>
