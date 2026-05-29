@@ -149,9 +149,9 @@ export default function ProfileEditClient() {
         formattedWhatsapp = countryCode + rawPhone;
       }
 
-      // Check if selected level requires a department (sort_order >= 3)
+      // Check if selected level requires a department
       const selectedLvl = levels.find((l) => l.id === formData.level_id);
-      const requiresDepartment = selectedLvl ? selectedLvl.sort_order >= 3 : false;
+      const requiresDepartment = selectedLvl ? !!selectedLvl.requires_department : false;
       const finalDeptId = requiresDepartment ? (formData.department_id || null) : null;
 
       // Update profile
@@ -219,7 +219,7 @@ export default function ProfileEditClient() {
   }
 
   const selectedLvl = levels.find((l) => l.id === formData.level_id);
-  const requiresDepartment = selectedLvl ? selectedLvl.sort_order >= 3 : false;
+  const requiresDepartment = selectedLvl ? !!selectedLvl.requires_department : false;
 
   return (
     <div className={styles.page}>
@@ -325,7 +325,7 @@ export default function ProfileEditClient() {
             onChange={(e) => {
               const val = e.target.value;
               const lvl = levels.find((l) => l.id === val);
-              const reqs = lvl ? lvl.sort_order >= 3 : false;
+              const reqs = lvl ? !!lvl.requires_department : false;
               setFormData((prev) => ({
                 ...prev,
                 level_id: val,

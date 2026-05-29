@@ -134,9 +134,9 @@ export default function RegisterForm() {
       formattedWhatsapp = countryCode + rawPhone;
     }
 
-    // Custom check for department requirement based on academic level (required for Year 3 and above)
+    // Check if selected level requires a department
     const selectedLvl = levels.find((l) => l.id === formData.level_id);
-    const requiresDepartment = selectedLvl ? selectedLvl.sort_order >= 3 : false;
+    const requiresDepartment = selectedLvl ? !!selectedLvl.requires_department : false;
 
     const dataToValidate = {
       ...formData,
@@ -284,7 +284,7 @@ export default function RegisterForm() {
   };
 
   const selectedLvl = levels.find((l) => l.id === formData.level_id);
-  const requiresDepartment = selectedLvl ? selectedLvl.sort_order >= 3 : false;
+  const requiresDepartment = selectedLvl ? !!selectedLvl.requires_department : false;
 
   if (verificationSent) {
     return (
@@ -482,7 +482,7 @@ export default function RegisterForm() {
             onChange={(e) => {
               const val = e.target.value;
               const lvl = levels.find((l) => l.id === val);
-              const reqs = lvl ? lvl.sort_order >= 3 : false;
+              const reqs = lvl ? !!lvl.requires_department : false;
               setFormData((prev) => ({
                 ...prev,
                 level_id: val,

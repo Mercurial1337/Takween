@@ -23,8 +23,8 @@ export default function LevelsClient() {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [name, setName] = useState('');
-  const [sortOrder, setSortOrder] = useState(0);
-  const [saving, setSaving] = useState(false);
+  const [sortOrder, setSortOrder] = useState('');
+  const [requiresDepartment, setRequiresDepartment] = useState(false);
 
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -57,21 +57,29 @@ export default function LevelsClient() {
     return () => { active = false; };
   }, [fetchData]);
 
-  const openCreate = () => { setEditing(null); setName(''); setSortOrder(items.length); setShowModal(true); };
-  const openEdit = (item) => { setEditing(item); setName(item.name); setSortOrder(item.sort_order); setShowModal(true); };
+  const openCreate = () => { setEditing(null); setName(''); setSortOrder(items.length); setRequiresDepartment(false); setShowModal(true); };
+  const openEdit = (level) => { setEditing(level); setName(level.name); setSortOrder(level.sort_order); setRequiresDepartment(!!level.requires_department); setShowModal(true); };
 
   const handleSave = async () => {
     if (!name.trim()) return;
     setSaving(true);
     try {
       if (editing) {
-        await supabase.from('levels').update({ name: name.trim(), sort_order: Number(sortOrder) }).eq('id', editing.id);
+        await supabase.from('levels').update({ 
+          name: name.trim(), 
+          sort_order: Number(sortOrder),
+          requires_department: requiresDepartment
+        }).eq('id', editing.id);
         showToast({ title: 'Level updated', variant: 'success' });
-        if (user) logAdminAction({ adminId: user.id, action: 'update', entityType: 'level', entityId: editing.id, details: { name: name.trim(), sort_order: Number(sortOrder) }, supabase });
+        if (user) logAdminAction({ adminId: user.id, action: 'update', entityType: 'level', entityId: editing.id, details: { name: name.trim(), sort_order: Number(sortOrder), requires_department: requiresDepartment }, supabase });
       } else {
-        const { data } = await supabase.from('levels').insert({ name: name.trim(), sort_order: Number(sortOrder) }).select().single();
+        const { data } = await supabase.from('levels').insert({ 
+          name: name.trim(), 
+          sort_order: Number(sortOrder),
+          requires_department: requiresDepartment
+        }).select().single();
         showToast({ title: 'Level created', variant: 'success' });
-        if (data && user) logAdminAction({ adminId: user.id, action: 'create', entityType: 'level', entityId: data.id, details: { name: name.trim(), sort_order: Number(sortOrder) }, supabase });
+        if (data && user) logAdminAction({ adminId: user.id, action: 'create', entityType: 'level', entityId: data.id, details: { name: name.trim(), sort_order: Number(sortOrder), requires_department: requiresDepartment }, supabase });
       }
       setShowModal(false);
       fetchData();
@@ -106,7 +114,10 @@ export default function LevelsClient() {
         {items.map((item) => (
           <Card key={item.id} className={styles.row}>
             <div className={styles.rowInfo}>
-              <p className={styles.rowTitle}>{item.name}</p>
+              <p className={styles.rowTitle}>
+                {item.name}
+                {item.requires_department && <span className={styles.tag} style={{ marginLeft: '8px', fontSize: '0.75rem', padding: '2px 6px', borderRadius: '4px', background: 'var(--bg-accent)', color: 'var(--text-accent)' }}>Requires Dept</span>}
+              </p>
               <p className={styles.rowMeta}>Sort order: {item.sort_order}</p>
             </div>
             <div className={styles.rowActions}>
@@ -128,6 +139,18 @@ export default function LevelsClient() {
         <div className={styles.form}>
           <Input id="level-name" label="Name" value={name} onChange={(e) => setName(e.target.value)} required />
           <Input id="level-order" label="Sort Order" type="number" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '16px', marginBottom: '8px' }}>
+            <input 
+              type="checkbox" 
+              id="requires-department" 
+              checked={requiresDepartment}
+              onChange={(e) => setRequiresDepartment(e.target.checked)}
+              style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+            />
+            <label htmlFor="requires-department" style={{ cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+              Requires Department Selection
+            </label>
+          </div>
         </div>
       </Modal>
     </div>
