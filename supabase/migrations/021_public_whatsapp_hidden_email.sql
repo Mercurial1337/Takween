@@ -15,11 +15,11 @@ SET whatsapp_number = c.whatsapp_number
 FROM public.contact_info c
 WHERE p.id = c.id;
 
--- 3. Drop whatsapp_number from contact_info
-ALTER TABLE public.contact_info DROP COLUMN IF EXISTS whatsapp_number;
-
--- 4. Drop admin_users_view (admins will query profiles directly without emails)
+-- 3. Drop admin_users_view (admins will query profiles directly without emails)
 DROP VIEW IF EXISTS public.admin_users_view;
+
+-- 4. Drop whatsapp_number from contact_info
+ALTER TABLE public.contact_info DROP COLUMN IF EXISTS whatsapp_number;
 
 -- 5. Update the auth.users trigger
 CREATE OR REPLACE FUNCTION public.handle_new_user()
