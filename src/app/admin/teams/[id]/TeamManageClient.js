@@ -58,7 +58,7 @@ export default function TeamManageClient({ id }) {
     try {
       const { data: t, error } = await supabase
         .from('teams')
-        .select(`*, projects(id, title, department_id, departments(name)), profiles:owner_id(id, full_name, email, avatar_url)`)
+        .select(`*, projects(id, title, department_id, departments(name)), profiles:owner_id(id, full_name, avatar_url)`)
         .eq('id', id)
         .single();
       if (error) throw error;
@@ -67,13 +67,56 @@ export default function TeamManageClient({ id }) {
       setOwnerId(t.owner_id);
 
       const [membersRes, manualRes, requestsRes] = await Promise.all([
-        supabase.from('team_members').select('*, profiles:user_id(id, full_name, email, avatar_url)').eq('team_id', id),
+        supabase.from('team_members').select('*, profiles:user_id(id, full_name, avatar_url)').eq('team_id', id),
         supabase.from('manual_members').select('*').eq('team_id', id),
-        supabase.from('join_requests').select('*, profiles:user_id(id, full_name, email, avatar_url)').eq('team_id', id).eq('status', 'pending'),
+        supabase.from('join_requests').select('*, profiles:user_id(id, full_name, avatar_url)').eq('team_id', id).eq('status', 'pending'),
       ]);
-      setMembers(membersRes.data || []);
+
+      const loadedMembers = membersRes.data || [];
+      const loadedRequests = requestsRes.data || [];
+
+      // Fetch emails from contact_info for all relevant users
+      const userIds = [
+        t.owner_id,
+        ...loadedMembers.map(m => m.user_id),
+        ...loadedRequests.map(r => r.user_id),
+      ].filter(Boolean);
+
+      const emailsMap = {};
+      if (userIds.length > 0) {
+        const { data: contacts, error: contactsErr } = await supabase
+          .from('contact_info')
+          .select('user_id, email')
+          .in('user_id', userIds);
+
+        if (!contactsErr && contacts) {
+          contacts.forEach(c => {
+            emailsMap[c.user_id] = c.email;
+          });
+        }
+      }
+
+      // Enrich profiles with email
+      if (t.profiles) {
+        t.profiles.email = emailsMap[t.owner_id] || '';
+      }
+      
+      loadedMembers.forEach(m => {
+        if (m.profiles) {
+          m.profiles.email = emailsMap[m.user_id] || '';
+        }
+      });
+
+      loadedRequests.forEach(r => {
+        if (r.profiles) {
+          r.profiles.email = emailsMap[r.user_id] || '';
+        }
+      });
+
+      setTeam(t);
+      setMembers(loadedMembers);
       setManualMembers(manualRes.data || []);
-      setJoinRequests(requestsRes.data || []);
+      setJoinRequests(loadedRequests);
     } catch (err) {
       showToast({ title: 'Error', message: err.message, variant: 'error' });
       router.push('/admin/teams');
@@ -149,10 +192,40 @@ export default function TeamManageClient({ id }) {
   // --- Search & Add ---
   const handleSearchUser = async () => {
     if (!searchEmail.trim()) return;
-    const { data } = await supabase.from('profiles').select('id, full_name, email, avatar_url').ilike('email', `%${searchEmail.trim()}%`).limit(1).maybeSingle();
-    if (data) { setFoundUser(data); } else {
-      setFoundUser(null);
-      showToast({ title: 'Not found', message: 'No user with that email.', variant: 'error' });
+    try {
+      const { data: contact, error: contactErr } = await supabase
+        .from('contact_info')
+        .select('user_id, email')
+        .ilike('email', `%${searchEmail.trim()}%`)
+        .limit(1)
+        .maybeSingle();
+
+      if (contactErr) throw contactErr;
+
+      if (contact) {
+        const { data: profile, error: profileErr } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .eq('id', contact.user_id)
+          .maybeSingle();
+
+        if (profileErr) throw profileErr;
+
+        if (profile) {
+          setFoundUser({
+            ...profile,
+            email: contact.email,
+          });
+        } else {
+          setFoundUser(null);
+          showToast({ title: 'Not found', message: 'No profile found for that user.', variant: 'error' });
+        }
+      } else {
+        setFoundUser(null);
+        showToast({ title: 'Not found', message: 'No user with that email.', variant: 'error' });
+      }
+    } catch (err) {
+      showToast({ title: 'Error', message: err.message, variant: 'error' });
     }
   };
 

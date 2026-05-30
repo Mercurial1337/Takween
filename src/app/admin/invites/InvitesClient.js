@@ -79,11 +79,25 @@ export default function InvitesClient() {
 
     setSaving(true);
     try {
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id, role, full_name')
+      const { data: contact, error: contactErr } = await supabase
+        .from('contact_info')
+        .select('user_id')
         .eq('email', email.trim().toLowerCase())
         .maybeSingle();
+
+      if (contactErr) throw contactErr;
+
+      let existingProfile = null;
+      if (contact) {
+        const { data: profile, error: profileErr } = await supabase
+          .from('profiles')
+          .select('id, role, full_name')
+          .eq('id', contact.user_id)
+          .maybeSingle();
+
+        if (profileErr) throw profileErr;
+        existingProfile = profile;
+      }
 
       if (existingProfile) {
         if (existingProfile.role === 'admin') {

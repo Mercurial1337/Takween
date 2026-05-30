@@ -104,12 +104,47 @@ export default function UsersClient() {
 
   const handleExport = async () => {
     try {
-      let query = supabase.from('profiles').select('full_name, role, whatsapp_number, created_at').order('created_at', { ascending: false });
+      let query = supabase.from('profiles').select('id, full_name, role, whatsapp_number, created_at').order('created_at', { ascending: false });
       if (searchDebounced) {
         query = query.or(`full_name.ilike.%${searchDebounced}%`);
       }
-      const { data } = await query;
-      if (data) downloadCSV(data, 'takween_users.csv');
+      const { data: profilesData, error: profilesErr } = await query;
+      if (profilesErr) throw profilesErr;
+
+      if (profilesData && profilesData.length > 0) {
+        const { data: contactsData, error: contactsErr } = await supabase
+          .from('contact_info')
+          .select('user_id, email')
+          .in('user_id', profilesData.map(p => p.id));
+
+        if (contactsErr) throw contactsErr;
+
+        const emailsMap = {};
+        if (contactsData) {
+          contactsData.forEach(c => {
+            emailsMap[c.user_id] = c.email;
+          });
+        }
+
+        const headers = ['Name', 'Email', 'Role', 'WhatsApp', 'Joined'];
+        const rows = profilesData.map(u => [
+          u.full_name,
+          emailsMap[u.id] || '',
+          u.role,
+          u.whatsapp_number || '',
+          new Date(u.created_at).toLocaleDateString(),
+        ]);
+        const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'takween_users.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        showToast({ title: 'Export', message: 'No users to export.', variant: 'info' });
+      }
     } catch (err) {
       showToast({ title: 'Export failed', message: err.message, variant: 'error' });
     }

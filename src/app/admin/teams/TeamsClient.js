@@ -46,7 +46,7 @@ export default function TeamsClient() {
           status,
           created_at,
           projects!inner (id, title, department_id),
-          profiles:owner_id (id, full_name, email),
+          profiles:owner_id (id, full_name),
           team_members (id, user_id),
           manual_members (id)
         `, { count: 'exact' });
