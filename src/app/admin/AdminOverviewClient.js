@@ -43,6 +43,12 @@ export default function AdminOverviewClient() {
           supabase.from('join_requests').select('id, status, created_at, profiles:user_id(full_name), teams(projects(title))').order('created_at', { ascending: false }).limit(5),
         ]);
 
+        if (recentProfiles.error) console.error('Error fetching recent profiles:', recentProfiles.error);
+        if (recentTeams.error) console.error('Error fetching recent teams:', recentTeams.error);
+        if (recentProjects.error) console.error('Error fetching recent projects:', recentProjects.error);
+        if (recentFeedback.error) console.error('Error fetching recent feedback:', recentFeedback.error);
+        if (recentJoinRequests.error) console.error('Error fetching recent join requests:', recentJoinRequests.error);
+
         // Merge into a unified activity feed
         const merged = [
           ...(recentProfiles.data || []).map(p => ({
@@ -136,7 +142,7 @@ export default function AdminOverviewClient() {
         ))}
       </div>
 
-      <div className={styles.overviewSections}>
+      <div className={`${styles.overviewSections} ${topDepartments.length > 0 ? styles.withSidebar : ''}`}>
         <div className={styles.overviewMain}>
           <h2 className={styles.sectionTitle}>Recent Activities</h2>
           <div className={styles.activityList}>

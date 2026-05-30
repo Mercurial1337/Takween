@@ -42,12 +42,16 @@
 /* Overview layout */
 .overviewSections {
   display: grid;
-  grid-template-columns: 1fr 300px;
+  grid-template-columns: 1fr;
   gap: var(--space-xl);
 }
 
+.overviewSections.withSidebar {
+  grid-template-columns: 1fr 300px;
+}
+
 @media (max-width: 900px) {
-  .overviewSections {
+  .overviewSections.withSidebar {
     grid-template-columns: 1fr;
   }
 }
