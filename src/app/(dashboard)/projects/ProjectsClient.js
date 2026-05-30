@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Search, Building2, Users, UsersRound } from 'lucide-react';
@@ -38,26 +38,17 @@ export default function ProjectsClient() {
   // Search: local state for typing, debounced value synced to URL
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const debouncedSearch = useDebounce(searchQuery, 350);
-  const [prevDebouncedSearch, setPrevDebouncedSearch] = useState(debouncedSearch);
+  const lastSyncedSearch = useRef(debouncedSearch);
 
   // Sync debounced search to URL
   useEffect(() => {
-    if (debouncedSearch !== prevDebouncedSearch) {
-      setPrevDebouncedSearch(debouncedSearch);
+    if (debouncedSearch !== lastSyncedSearch.current) {
+      lastSyncedSearch.current = debouncedSearch;
       updateQuery({ q: debouncedSearch, page: '1' }, { q: '', page: '1' });
     }
-  }, [debouncedSearch, prevDebouncedSearch, updateQuery]);
+  }, [debouncedSearch, updateQuery]);
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-
-  // Reset to page 1 when department filter changes
-  const [prevDeptFilter, setPrevDeptFilter] = useState(departmentFilter);
-  useEffect(() => {
-    if (departmentFilter !== prevDeptFilter) {
-      setPrevDeptFilter(departmentFilter);
-      setPage('1');
-    }
-  }, [departmentFilter, prevDeptFilter, setPage]);
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -178,7 +169,9 @@ export default function ProjectsClient() {
             placeholder="All Departments"
             options={departments.map((d) => ({ value: d.id, label: d.name }))}
             value={departmentFilter}
-            onChange={(e) => setDepartmentFilter(e.target.value)}
+            onChange={(e) => {
+              updateQuery({ dept: e.target.value, page: '1' }, { dept: '', page: '1' });
+            }}
           />
         </div>
         {(searchQuery || departmentFilter) && (

@@ -1,8 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import ProjectDetailClient from '@/app/(dashboard)/projects/[id]/ProjectDetailClient.jsx';
 import { mockSupabase } from '../../setup';
+
+// Mock useQueryState to act like useState in tests
+vi.mock('@/hooks/useQueryState', () => {
+  return {
+    useQueryState: (key, defaultValue) => {
+      const [val, setVal] = useState(defaultValue);
+      return [val, setVal];
+    },
+    useQueryUpdater: () => vi.fn(),
+  };
+});
 
 // Mock contexts
 const mockShowToast = vi.fn();
@@ -35,9 +47,7 @@ vi.mock('@/components/ui/Toast/Toast', () => ({
   ToastContainer: () => null,
 }));
 
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
-}));
+
 
 // Data Mocks
 const mockProject = {
