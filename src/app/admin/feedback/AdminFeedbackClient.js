@@ -48,7 +48,7 @@ export default function AdminFeedbackClient() {
 
       let query = supabase
         .from('feedback')
-        .select(`*, profiles:user_id (full_name, email, avatar_url)`, { count: 'exact' });
+        .select(`*, profiles (full_name, avatar_url)`, { count: 'exact' });
 
       if (searchDebounced) query = query.ilike('subject', `%${searchDebounced}%`);
       if (filterStatus !== 'all') query = query.eq('status', filterStatus);

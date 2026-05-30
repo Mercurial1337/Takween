@@ -42,11 +42,22 @@ export default function FeedbackDetailClient({ id }) {
       try {
         const { data, error } = await supabase
           .from('feedback')
-          .select(`*, profiles:user_id (full_name, email, avatar_url)`)
+          .select(`*, profiles:user_id (full_name, avatar_url)`)
           .eq('id', id)
           .single();
 
         if (error) throw error;
+
+        // Fetch email from contact_info (separate table since migration 019)
+        if (data?.user_id) {
+          const { data: contact } = await supabase
+            .from('contact_info')
+            .select('email')
+            .eq('id', data.user_id)
+            .single();
+          data.contact_info = contact;
+        }
+
         setFeedback(data);
 
         // Auto-mark as read if it's 'New'
@@ -168,7 +179,7 @@ export default function FeedbackDetailClient({ id }) {
                 <User size={16} /> {feedback.profiles?.full_name || 'Anonymous User'}
               </p>
               <p style={{ color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Mail size={16} /> {feedback.profiles?.email || 'No email provided'}
+                <Mail size={16} /> {feedback.contact_info?.email || 'No email provided'}
               </p>
             </div>
           </div>
