@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Search, Download, ShieldCheck, User } from 'lucide-react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/contexts/ToastContext';
 import Card from '@/components/ui/Card/Card';
@@ -184,8 +185,10 @@ export default function UsersClient() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <Avatar src={u.avatar_url} name={u.full_name} size="sm" />
                     <div>
-                      <p className={styles.rowTitle}>{u.full_name}</p>
-                      <p className={styles.rowMeta}>Joined {formatRelativeTime(u.created_at)}</p>
+                      <Link href={`/profile/${u.id}`} className={styles.userLink}>
+                        <p className={styles.rowTitle} style={{ margin: 0 }}>{u.full_name}</p>
+                      </Link>
+                      <p className={styles.rowMeta} style={{ margin: '2px 0 0 0' }}>Joined {formatRelativeTime(u.created_at)}</p>
                     </div>
                   </div>
                 </div>

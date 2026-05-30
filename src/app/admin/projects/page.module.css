@@ -141,3 +141,12 @@
   }
 }
 
+.userLink {
+  text-decoration: none;
+  color: var(--color-primary);
+}
+
+.userLink:hover {
+  text-decoration: underline;
+}
+
