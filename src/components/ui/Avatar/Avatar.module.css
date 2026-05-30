@@ -16,6 +16,11 @@
 }
 
 /* — Sizes — */
+.xs {
+  width: 24px;
+  height: 24px;
+}
+
 .sm {
   width: 32px;
   height: 32px;
@@ -50,6 +55,10 @@
   line-height: 1;
   text-transform: uppercase;
   user-select: none;
+}
+
+.xs .fallback {
+  font-size: 9px;
 }
 
 .sm .fallback {
