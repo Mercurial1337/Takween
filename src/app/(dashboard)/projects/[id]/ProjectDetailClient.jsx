@@ -1497,19 +1497,7 @@ export default function ProjectDetailClient({ id }) {
                                       ))}
                                     </div>
                                   )}
-                                  {memberProfile?.whatsapp_number && (
-                                    <div className={styles.memberContactInfo}>
-                                      <a
-                                        href={`https://wa.me/${memberProfile.whatsapp_number.replace(/\D/g, '')}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className={styles.contactBadge}
-                                        title="WhatsApp"
-                                      >
-                                        <Whatsapp size={12} /> {memberProfile.whatsapp_number}
-                                      </a>
-                                    </div>
-                                  )}
+
                                 </div>
                               </div>
                               {isOwner && m.user_id !== user.id && (
