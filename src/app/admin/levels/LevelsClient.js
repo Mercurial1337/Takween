@@ -25,6 +25,7 @@ export default function LevelsClient() {
   const [name, setName] = useState('');
   const [sortOrder, setSortOrder] = useState('');
   const [requiresDepartment, setRequiresDepartment] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
