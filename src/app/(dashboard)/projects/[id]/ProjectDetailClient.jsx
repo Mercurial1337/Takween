@@ -1127,7 +1127,7 @@ export default function ProjectDetailClient({ id }) {
               placeholder="All Departments"
               options={[{ value: 'all', label: 'All Departments' }, ...departments.map((d) => ({ value: d.id, label: d.name }))]}
               value={deptFilter}
-              onChange={(e) => { setDeptFilter(e.target.value); updateQuery({ teamPage: null, studentPage: null }); }}
+              onChange={(e) => { updateQuery({ dept: e.target.value, teamPage: null, studentPage: null }); }}
             />
           </div>
 
@@ -1137,7 +1137,7 @@ export default function ProjectDetailClient({ id }) {
               placeholder="All Skills"
               options={[{ value: 'all', label: 'All Skills' }, ...availableSkills.map((s) => ({ value: s.id, label: s.name }))]}
               value={skillFilter}
-              onChange={(e) => { setSkillFilter(e.target.value); updateQuery({ teamPage: null, studentPage: null }); }}
+              onChange={(e) => { updateQuery({ skill: e.target.value, teamPage: null, studentPage: null }); }}
             />
           </div>
 
@@ -1151,7 +1151,7 @@ export default function ProjectDetailClient({ id }) {
                 { value: 'members_low', label: 'Members (Low to High)' }
               ]}
               value={sortFilter}
-              onChange={(e) => { setSortFilter(e.target.value); updateQuery({ teamPage: null }); }}
+              onChange={(e) => { updateQuery({ sort: e.target.value, teamPage: null }); }}
             />
           </div>
         </div>
