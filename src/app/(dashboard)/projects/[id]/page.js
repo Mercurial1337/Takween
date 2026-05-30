@@ -1,5 +1,7 @@
+import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import ProjectDetailClient from './ProjectDetailClient';
+import Skeleton from '@/components/ui/Skeleton/Skeleton';
 
 export async function generateMetadata({ params }) {
   const { id } = await params;
@@ -23,7 +25,22 @@ export async function generateMetadata({ params }) {
   };
 }
 
+function ProjectDetailFallback() {
+  return (
+    <div>
+      <Skeleton variant="text" width="120px" height="20px" />
+      <Skeleton variant="text" width="400px" height="36px" />
+      <Skeleton variant="text" width="200px" height="20px" />
+      <Skeleton variant="rectangular" height="500px" />
+    </div>
+  );
+}
+
 export default async function ProjectDetailPage({ params }) {
   const { id } = await params;
-  return <ProjectDetailClient id={id} />;
+  return (
+    <Suspense fallback={<ProjectDetailFallback />}>
+      <ProjectDetailClient id={id} />
+    </Suspense>
+  );
 }

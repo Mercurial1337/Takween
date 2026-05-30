@@ -2,9 +2,11 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Search, Building2, Users, UsersRound } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useQueryState, useQueryUpdater } from '@/hooks/useQueryState';
 import PageHeader from '@/components/layout/PageHeader/PageHeader';
 import Card from '@/components/ui/Card/Card';
 import Badge from '@/components/ui/Badge/Badge';
@@ -15,26 +17,47 @@ import EmptyState from '@/components/ui/EmptyState/EmptyState';
 import Skeleton from '@/components/ui/Skeleton/Skeleton';
 import styles from './page.module.css';
 
-const PAGE_SIZE = 9;
+const PAGE_SIZE = 5;
 
 export default function ProjectsClient() {
+  const searchParams = useSearchParams();
+  const updateQuery = useQueryUpdater();
+
   const [projects, setProjects] = useState([]);
   const [featuredProject, setFeaturedProject] = useState(null);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [departmentFilter, setDepartmentFilter] = useState('');
-  const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const supabase = useMemo(() => createClient(), []);
+
+  // URL-synced state
+  const [departmentFilter, setDepartmentFilter] = useQueryState('dept', '');
+  const [page, setPage] = useQueryState('page', '1');
+  const pageNum = parseInt(page, 10) || 1;
+
+  // Search: local state for typing, debounced value synced to URL
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const debouncedSearch = useDebounce(searchQuery, 350);
+  const [prevDebouncedSearch, setPrevDebouncedSearch] = useState(debouncedSearch);
+
+  // Sync debounced search to URL
+  useEffect(() => {
+    if (debouncedSearch !== prevDebouncedSearch) {
+      setPrevDebouncedSearch(debouncedSearch);
+      updateQuery({ q: debouncedSearch, page: '1' }, { q: '', page: '1' });
+    }
+  }, [debouncedSearch, prevDebouncedSearch, updateQuery]);
+
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  // Reset to page 1 when filters change
+  // Reset to page 1 when department filter changes
+  const [prevDeptFilter, setPrevDeptFilter] = useState(departmentFilter);
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPage(1);
-  }, [debouncedSearch, departmentFilter]);
+    if (departmentFilter !== prevDeptFilter) {
+      setPrevDeptFilter(departmentFilter);
+      setPage('1');
+    }
+  }, [departmentFilter, prevDeptFilter, setPage]);
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -65,7 +88,7 @@ export default function ProjectsClient() {
       }
 
       // Pagination
-      const from = (page - 1) * PAGE_SIZE;
+      const from = (pageNum - 1) * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
       const { data, count } = await query
@@ -75,7 +98,7 @@ export default function ProjectsClient() {
 
       if (data) {
         // If we are on page 1 and there is no search/filter, extract the featured project
-        if (page === 1 && !debouncedSearch && !departmentFilter) {
+        if (pageNum === 1 && !debouncedSearch && !departmentFilter) {
           const featured = data.find(p => p.is_featured);
           if (featured) {
             setFeaturedProject(featured);
@@ -99,7 +122,7 @@ export default function ProjectsClient() {
     } finally {
       setLoading(false);
     }
-  }, [supabase, debouncedSearch, departmentFilter, page]);
+  }, [supabase, debouncedSearch, departmentFilter, pageNum]);
 
   // Fetch departments once
   useEffect(() => {
@@ -146,7 +169,7 @@ export default function ProjectsClient() {
             icon={Search}
             placeholder="Search projects..."
             value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         <div className={styles.filterWrapper}>
@@ -155,13 +178,13 @@ export default function ProjectsClient() {
             placeholder="All Departments"
             options={departments.map((d) => ({ value: d.id, label: d.name }))}
             value={departmentFilter}
-            onChange={(e) => { setDepartmentFilter(e.target.value); setPage(1); }}
+            onChange={(e) => setDepartmentFilter(e.target.value)}
           />
         </div>
         {(searchQuery || departmentFilter) && (
           <button
             className={styles.clearBtn}
-            onClick={() => { setSearchQuery(''); setDepartmentFilter(''); setPage(1); }}
+            onClick={() => { setSearchQuery(''); updateQuery({ q: null, dept: null, page: null }); }}
           >
             Clear filters
           </button>
@@ -248,9 +271,9 @@ export default function ProjectsClient() {
           })}
         </div>
         <Pagination
-          currentPage={page}
+          currentPage={pageNum}
           totalPages={totalPages}
-          onPageChange={setPage}
+          onPageChange={(p) => setPage(String(p))}
         />
         </>
       )}

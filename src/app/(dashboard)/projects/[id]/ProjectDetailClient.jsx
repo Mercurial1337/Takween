@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryState, useQueryUpdater } from '@/hooks/useQueryState';
 import {
   Users, Building2, ArrowLeft, Plus, UserPlus, UserMinus,
   Crown, Trash2, LogOut, MessageSquare, Check, X, HandHelping, AlertTriangle, Send, Lock, Pencil
@@ -18,6 +19,7 @@ import Modal from '@/components/ui/Modal/Modal';
 import Input from '@/components/ui/Input/Input';
 import Select from '@/components/ui/Select/Select';
 import Skeleton from '@/components/ui/Skeleton/Skeleton';
+import Pagination from '@/components/ui/Pagination/Pagination';
 import styles from './page.module.css';
 import Link from 'next/link';
 
@@ -100,13 +102,22 @@ export default function ProjectDetailClient({ id }) {
   const [myRequests, setMyRequests] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [selectedTeamId, setSelectedTeamId] = useState(null);
-  const [deptFilter, setDeptFilter] = useState('all');
-  const [sortFilter, setSortFilter] = useState('newest');
-  const [skillFilter, setSkillFilter] = useState('all');
+  const [deptFilter, setDeptFilter] = useQueryState('dept', 'all');
+  const [sortFilter, setSortFilter] = useQueryState('sort', 'newest');
+  const [skillFilter, setSkillFilter] = useQueryState('skill', 'all');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('teams'); // 'teams' or 'students'
+  const [activeTab, setActiveTab] = useQueryState('tab', 'teams');
   const [projectSeekers, setProjectSeekers] = useState([]);
+
+  // Pagination state (URL-synced)
+  const TEAMS_PAGE_SIZE = 10;
+  const STUDENTS_PAGE_SIZE = 10;
+  const [teamPageStr, setTeamPage] = useQueryState('teamPage', '1');
+  const [studentPageStr, setStudentPage] = useQueryState('studentPage', '1');
+  const teamPage = parseInt(teamPageStr, 10) || 1;
+  const studentPage = parseInt(studentPageStr, 10) || 1;
+  const updateQuery = useQueryUpdater();
   const [showSeekerModal, setShowSeekerModal] = useState(false);
   const [seekerMessage, setSeekerMessage] = useState('');
   const [showMobileDetails, setShowMobileDetails] = useState(false);
@@ -231,6 +242,19 @@ export default function ProjectDetailClient({ id }) {
 
     return result;
   }, [projectSeekers, deptFilter, skillFilter]);
+
+  // Paginated subsets
+  const totalTeamPages = Math.ceil(filteredTeams.length / TEAMS_PAGE_SIZE);
+  const paginatedTeams = useMemo(() => {
+    const from = (teamPage - 1) * TEAMS_PAGE_SIZE;
+    return filteredTeams.slice(from, from + TEAMS_PAGE_SIZE);
+  }, [filteredTeams, teamPage]);
+
+  const totalStudentPages = Math.ceil(filteredSeekers.length / STUDENTS_PAGE_SIZE);
+  const paginatedSeekers = useMemo(() => {
+    const from = (studentPage - 1) * STUDENTS_PAGE_SIZE;
+    return filteredSeekers.slice(from, from + STUDENTS_PAGE_SIZE);
+  }, [filteredSeekers, studentPage]);
 
   const selectedTeam = useMemo(() => {
     if (selectedTeamId) {
@@ -1103,7 +1127,7 @@ export default function ProjectDetailClient({ id }) {
               placeholder="All Departments"
               options={[{ value: 'all', label: 'All Departments' }, ...departments.map((d) => ({ value: d.id, label: d.name }))]}
               value={deptFilter}
-              onChange={(e) => setDeptFilter(e.target.value)}
+              onChange={(e) => { setDeptFilter(e.target.value); updateQuery({ teamPage: null, studentPage: null }); }}
             />
           </div>
 
@@ -1113,7 +1137,7 @@ export default function ProjectDetailClient({ id }) {
               placeholder="All Skills"
               options={[{ value: 'all', label: 'All Skills' }, ...availableSkills.map((s) => ({ value: s.id, label: s.name }))]}
               value={skillFilter}
-              onChange={(e) => setSkillFilter(e.target.value)}
+              onChange={(e) => { setSkillFilter(e.target.value); updateQuery({ teamPage: null, studentPage: null }); }}
             />
           </div>
 
@@ -1127,7 +1151,7 @@ export default function ProjectDetailClient({ id }) {
                 { value: 'members_low', label: 'Members (Low to High)' }
               ]}
               value={sortFilter}
-              onChange={(e) => setSortFilter(e.target.value)}
+              onChange={(e) => { setSortFilter(e.target.value); updateQuery({ teamPage: null }); }}
             />
           </div>
         </div>
@@ -1208,7 +1232,7 @@ export default function ProjectDetailClient({ id }) {
                   </div>
 
                   <div className={styles.teamCardsList}>
-                    {filteredTeams.map((t) => {
+                    {paginatedTeams.map((t) => {
                       const isSelected = selectedTeam && t.id === selectedTeam.id;
                       const tMembers = allMembers.filter((m) => m.team_id === t.id);
                       const tManual = allManualMembers.filter((m) => m.team_id === t.id);
@@ -1300,6 +1324,13 @@ export default function ProjectDetailClient({ id }) {
                       );
                     })}
                   </div>
+                  {totalTeamPages > 1 && (
+                    <Pagination
+                      currentPage={teamPage}
+                      totalPages={totalTeamPages}
+                      onPageChange={(p) => setTeamPage(String(p))}
+                    />
+                  )}
                 </div>
                 {/* Right Pane: Selected Team Details */}
                 <div className={`${styles.rightPane} ${showMobileDetails ? styles.mobileOpen : ''}`}>
@@ -1649,8 +1680,9 @@ export default function ProjectDetailClient({ id }) {
               </div>
             </Card>
           ) : (
+            <>
             <div className={styles.seekersGrid}>
-              {filteredSeekers.map((seeker) => (
+              {paginatedSeekers.map((seeker) => (
                 <Card key={seeker.id} className={styles.seekerCard}>
                   <div className={styles.seekerHeader}>
                     <Link href={`/profile/${seeker.user_id}`} className={styles.seekerLink}>
@@ -1749,6 +1781,14 @@ export default function ProjectDetailClient({ id }) {
                 </Card>
               ))}
             </div>
+            {totalStudentPages > 1 && (
+              <Pagination
+                currentPage={studentPage}
+                totalPages={totalStudentPages}
+                onPageChange={(p) => setStudentPage(String(p))}
+              />
+            )}
+            </>
           )}
         </div>
       )}
