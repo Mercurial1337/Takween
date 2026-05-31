@@ -19,6 +19,7 @@ import Input from '@/components/ui/Input/Input';
 import Select from '@/components/ui/Select/Select';
 import Skeleton from '@/components/ui/Skeleton/Skeleton';
 import Pagination from '@/components/ui/Pagination/Pagination';
+import Breadcrumbs from '@/components/ui/Breadcrumbs/Breadcrumbs';
 import styles from './page.module.css';
 import Link from 'next/link';
 
@@ -423,9 +424,7 @@ export default function ProjectDetailClient({ id }) {
   if (user && profile && profile.role === 'student' && projectRequiresDepartment && !profile.department_id) {
     return (
       <div className={styles.page}>
-        <Link href="/projects" className={styles.backLink}>
-          <ArrowLeft size={16} /> Back to Projects
-        </Link>
+        <Breadcrumbs customLabels={{ [id]: project?.title || 'Project' }} />
         <Card className={styles.warningCard}>
           <Building2 size={48} className={styles.warningIcon} />
           <h2>Department Required</h2>
@@ -442,9 +441,7 @@ export default function ProjectDetailClient({ id }) {
 
   return (
     <div className={styles.page}>
-      <Link href="/projects" className={styles.backLink}>
-        <ArrowLeft size={16} /> Back to Projects
-      </Link>
+      <Breadcrumbs customLabels={{ [id]: project.title }} />
 
       {/* Project Header */}
       <div className={styles.header}>

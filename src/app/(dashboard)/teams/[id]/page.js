@@ -9,7 +9,7 @@ export async function generateMetadata({ params }) {
   
   const { data: team } = await supabase
     .from('teams')
-    .select('name, description')
+    .select('description, profiles:owner_id (full_name)')
     .eq('id', id)
     .single();
 
@@ -19,8 +19,10 @@ export async function generateMetadata({ params }) {
     };
   }
 
+  const teamName = `${team.profiles?.full_name || 'Unknown'}'s Team`;
+
   return {
-    title: `${team.name} | Takween`,
+    title: `${teamName} | Takween`,
     description: team.description?.slice(0, 155) || 'Team details on Takween',
   };
 }

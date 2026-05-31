@@ -131,6 +131,7 @@ export default function FeedbackDetailClient({ id }) {
       <PageHeader 
         title="Feedback Details" 
         description={`Submitted ${formatRelativeTime(feedback.created_at)}`} 
+        customLabels={feedback ? { [id]: feedback.subject } : {}}
       >
         <div style={{ display: 'flex', gap: '8px' }}>
           {feedback.status !== 'Resolved' && (

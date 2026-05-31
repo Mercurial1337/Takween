@@ -19,17 +19,14 @@ import Skeleton from '@/components/ui/Skeleton/Skeleton';
 import Modal from '@/components/ui/Modal/Modal';
 import Input from '@/components/ui/Input/Input';
 import EmptyState from '@/components/ui/EmptyState/EmptyState';
+import Breadcrumbs from '@/components/ui/Breadcrumbs/Breadcrumbs';
 import styles from './page.module.css';
-
-// ── helpers ──────────────────────────────────────────────────────
 
 const ensureAbsoluteUrl = (url) => {
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
   return `https://${url}`;
 };
-
-// ── profile select fragment (reused across queries) ─────────────
 
 const PROFILE_SELECT = `
   id, full_name, avatar_url, role,
@@ -38,8 +35,6 @@ const PROFILE_SELECT = `
   level_id, levels:level_id (name),
   profile_skills (skill_id, skills (name))
 `;
-
-// ── sub-components (declared outside render) ────────────────────
 
 function MemberCard({ profile, userId, roleLabel, isLeader, removable, onRemove }) {
   if (!profile) return null;
@@ -142,8 +137,6 @@ function ManualMemberCard({ member }) {
   );
 }
 
-// ── main component ──────────────────────────────────────────────
-
 export default function TeamDetailClient({ id }) {
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -165,8 +158,6 @@ export default function TeamDetailClient({ id }) {
 
   // Track if initial fetch has run
   const didFetch = useRef(false);
-
-  // ── data fetching ───────────────────────────────────────────
 
   const fetchTeamData = useCallback(async () => {
     try {
@@ -238,8 +229,6 @@ export default function TeamDetailClient({ id }) {
     }
   }, [fetchTeamData]);
 
-  // ── derived state ─────────────────────────────────────────────
-
   const ownerId      = team?.owner_id;
   const ownerProfile = team?.profiles;
   const isOwner      = Boolean(user && ownerId && user.id === ownerId);
@@ -247,8 +236,7 @@ export default function TeamDetailClient({ id }) {
   const totalSize    = 1 + members.length + manualMembers.length;
   const maxSize      = team?.projects?.max_team_size;
   const isFull       = maxSize ? totalSize >= maxSize : false;
-
-  // ── action handlers ───────────────────────────────────────────
+  const teamDisplayName = `${ownerProfile?.full_name || 'Unknown'}'s Team`;
 
   const handleJoinRequest = async () => {
     if (!user) {
@@ -353,8 +341,6 @@ export default function TeamDetailClient({ id }) {
     }
   };
 
-  // ── loading state ─────────────────────────────────────────────
-
   if (loading) {
     return (
       <div className={styles.page}>
@@ -378,20 +364,19 @@ export default function TeamDetailClient({ id }) {
     );
   }
 
-  // ── render ────────────────────────────────────────────────────
-
   return (
     <div className={styles.page}>
-      {/* Back link */}
-      <Link href={`/projects/${team.project_id}`} className={styles.backLink}>
-        <ArrowLeft size={16} />
-        Back to Project
-      </Link>
+      {/* Breadcrumbs */}
+      <Breadcrumbs items={[
+        { href: '/projects', label: 'Projects' },
+        { href: `/projects/${team.project_id}`, label: team.projects?.title || 'Project' },
+        { href: `/teams/${id}`, label: teamDisplayName },
+      ]} />
 
       {/* Team Header */}
       <div className={styles.header}>
         <div className={styles.titleArea}>
-          <h1 className={styles.title}>{team.name}</h1>
+          <h1 className={styles.title}>{teamDisplayName}</h1>
           <div className={styles.meta}>
             <Badge variant={team.status === 'recruiting' ? 'success' : 'secondary'}>
               {team.status === 'recruiting' ? 'Recruiting' : 'Closed'}
@@ -503,7 +488,7 @@ export default function TeamDetailClient({ id }) {
         </div>
       )}
 
-      {/* ── Join Request Modal ──────────────────────────── */}
+      {/* Join Request Modal */}
       <Modal isOpen={showJoinModal} onClose={() => setShowJoinModal(false)} title="Request to Join">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
           <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', margin: 0 }}>
@@ -525,7 +510,7 @@ export default function TeamDetailClient({ id }) {
         </div>
       </Modal>
 
-      {/* ── Delete Team Modal ──────────────────────────── */}
+      {/* Delete Team Modal */}
       <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Delete Team">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', color: 'var(--color-error)' }}>
