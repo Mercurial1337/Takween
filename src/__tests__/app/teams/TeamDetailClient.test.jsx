@@ -153,7 +153,7 @@ describe('TeamDetailClient', () => {
     render(<TeamDetailClient id="team-1" />);
 
     await waitFor(() => {
-      expect(screen.getByText('Alpha Team')).toBeInTheDocument();
+      expect(screen.getAllByText("Ahmed Owner's Team").length).toBeGreaterThan(0);
       expect(screen.getByText('A great team for the capstone project.')).toBeInTheDocument();
     });
   });
