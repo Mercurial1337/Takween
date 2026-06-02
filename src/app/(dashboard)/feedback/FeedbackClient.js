@@ -40,6 +40,25 @@ export default function FeedbackClient() {
 
       if (error) throw error;
 
+      // Send email using resend
+      try {
+        await fetch('/api/feedback', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: formData.type,
+            subject: formData.subject.trim(),
+            message: formData.message.trim(),
+            userEmail: user?.email,
+            userName: user?.user_metadata?.full_name || user?.user_metadata?.name || 'A user',
+          }),
+        });
+      } catch (emailErr) {
+        console.error('Failed to send email notification:', emailErr);
+      }
+
       showToast({ 
         title: 'Feedback Submitted', 
         message: 'Thank you for your feedback! We will review it shortly.', 
