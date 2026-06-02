@@ -731,4 +731,120 @@
   color: var(--color-text-muted);
 }
 
+/* --- Team Card Actions (merge + view) --- */
+
+.teamCardActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.mergeBtn {
+  color: var(--color-accent) !important;
+  font-size: var(--text-xs) !important;
+}
+
+.mergeBtn:hover:not(:disabled) {
+  background-color: var(--color-warning-bg) !important;
+}
+
+.mergeBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pendingMergeBadge {
+  white-space: nowrap;
+  font-size: 11px !important;
+}
+
+/* --- Merge Request Modal --- */
+
+.mergeModalTeamInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+  padding: var(--space-sm);
+  background-color: var(--color-surface);
+  border-radius: var(--radius-md);
+}
+
+.mergeModalTeamName {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.mergeModalTeamDetail {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin: 2px 0 0 0;
+}
+
+.mergeCapacityCard {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.mergeCapacityRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.mergeCapacityTotal {
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-border-light);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+}
+
+.mergeWarning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--color-error-bg);
+  color: var(--color-error);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  margin-bottom: var(--space-md);
+}
+
+.mergeWarning svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.modalContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}
+
 

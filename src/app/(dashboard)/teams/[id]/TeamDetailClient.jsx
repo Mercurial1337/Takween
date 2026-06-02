@@ -8,7 +8,7 @@ import { useToast } from '@/contexts/ToastContext';
 import { createClient } from '@/lib/supabase/client';
 import {
   Users, Building2, ArrowLeft, Plus, Trash2, LogOut,
-  Check, X, Crown, ShieldAlert, Send
+  Check, X, Crown, ShieldAlert, Send, UsersRound, AlertTriangle
 } from 'lucide-react';
 import { Github, Linkedin, Whatsapp } from '@/components/ui/Icons/Icons';
 import Card from '@/components/ui/Card/Card';
@@ -159,6 +159,13 @@ export default function TeamDetailClient({ id }) {
   // Track if initial fetch has run
   const didFetch = useRef(false);
 
+  // Merge state
+  const [userOwnedTeam, setUserOwnedTeam] = useState(null);
+  const [userTeamMembersCount, setUserTeamMembersCount] = useState(0);
+  const [pendingOutgoingMerge, setPendingOutgoingMerge] = useState(null);
+  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [mergeMessage, setMergeMessage] = useState('');
+
   const fetchTeamData = useCallback(async () => {
     try {
       setLoading(true);
@@ -214,6 +221,38 @@ export default function TeamDetailClient({ id }) {
       setMembers(membersData.filter(m => m.user_id !== ownerId));
       setManualMembers(manualData);
       setJoinRequests(requestData);
+
+      // Fetch user's owned team in the same project
+      if (user && user.id !== ownerId) {
+        const { data: myTeam } = await supabase
+          .from('teams')
+          .select('id, owner_id')
+          .eq('project_id', teamData.project_id)
+          .eq('owner_id', user.id)
+          .maybeSingle();
+
+        if (myTeam) {
+          setUserOwnedTeam(myTeam);
+
+          // Get counts for myTeam
+          const { count: regCount } = await supabase.from('team_members').select('*', { count: 'exact', head: true }).eq('team_id', myTeam.id);
+          const { count: manCount } = await supabase.from('manual_members').select('*', { count: 'exact', head: true }).eq('team_id', myTeam.id);
+          setUserTeamMembersCount((regCount || 0) + (manCount || 0));
+
+          // Get pending outgoing merge
+          const { data: outgoingMerge } = await supabase
+            .from('team_merge_requests')
+            .select('id, target_team_id, status')
+            .eq('source_team_id', myTeam.id)
+            .eq('status', 'pending')
+            .maybeSingle();
+          setPendingOutgoingMerge(outgoingMerge || null);
+        } else {
+          setUserOwnedTeam(null);
+          setPendingOutgoingMerge(null);
+        }
+      }
+
     } catch (err) {
       console.error('Team fetch error:', err);
       showToast({ title: 'Error', message: 'Failed to load team details.', type: 'error' });
@@ -341,6 +380,78 @@ export default function TeamDetailClient({ id }) {
     }
   };
 
+  const handleSendMergeRequest = async () => {
+    if (!user || !userOwnedTeam || !team) return;
+
+    if (pendingOutgoingMerge) {
+      showToast({ title: 'Request pending', message: 'You already have a pending merge request.', variant: 'warning' });
+      return;
+    }
+
+    const combinedSize = userTeamMembersCount + totalSize;
+    if (maxSize && combinedSize > maxSize) {
+      showToast({ title: 'Team too large', message: `Combined size (${combinedSize}) exceeds the limit (${maxSize}).`, variant: 'error' });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.from('team_merge_requests').insert({
+        source_team_id: userOwnedTeam.id,
+        target_team_id: team.id,
+        message: mergeMessage || null,
+      });
+
+      if (error) {
+        if (error.message?.includes('duplicate') || error.code === '23505') {
+          throw new Error('A pending merge request already exists.');
+        }
+        throw error;
+      }
+
+      // Notify target owner
+      if (team.owner_id) {
+        await supabase.from('notifications').insert({
+          user_id: team.owner_id,
+          type: 'merge_received',
+          title: 'Team join request received',
+          body: `${user.user_metadata?.full_name || 'Someone'}'s team wants to join your team for ${team.projects?.title}.`,
+          metadata: { source_team_id: userOwnedTeam.id, target_team_id: team.id },
+        });
+
+        if (ownerProfile?.email) {
+          try {
+            await fetch('/api/email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'merge_received',
+                recipientId: team.owner_id,
+                recipientName: ownerProfile.full_name,
+                actorName: user.user_metadata?.full_name || 'Someone',
+                projectName: team.projects?.title,
+                message: mergeMessage || null,
+                sourceMemberCount: userTeamMembersCount,
+              }),
+            });
+          } catch (e) {
+             console.error('Email error:', e);
+          }
+        }
+      }
+
+      showToast({ title: 'Request sent', message: `Merge request sent to ${ownerProfile?.full_name}.`, type: 'success' });
+      setShowMergeModal(false);
+      setMergeMessage('');
+      fetchTeamData();
+    } catch (err) {
+      console.error(err);
+      showToast({ title: 'Cannot send request', message: err.message, type: 'error' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className={styles.page}>
@@ -396,7 +507,22 @@ export default function TeamDetailClient({ id }) {
         </div>
 
         <div className={styles.actions}>
-          {!isMember && !isFull && team.status === 'recruiting' && (
+          {userOwnedTeam && !isOwner && !isFull && team.status !== 'closed' && (
+             pendingOutgoingMerge?.target_team_id === team.id ? (
+               <Badge variant="default">Request Pending</Badge>
+             ) : (
+               <Button
+                 icon={UsersRound}
+                 variant="outline"
+                 disabled={!!pendingOutgoingMerge}
+                 onClick={() => setShowMergeModal(true)}
+                 title={pendingOutgoingMerge ? 'You have a pending request elsewhere' : 'Join as a team'}
+               >
+                 Join as Team
+               </Button>
+             )
+          )}
+          {!isMember && !userOwnedTeam && !isFull && team.status === 'recruiting' && (
             <Button icon={Plus} onClick={() => setShowJoinModal(true)}>
               Request to Join
             </Button>
@@ -526,6 +652,64 @@ export default function TeamDetailClient({ id }) {
           </div>
         </div>
       </Modal>
+
+      {/* Merge Request Modal */}
+      <Modal isOpen={showMergeModal} onClose={() => { setShowMergeModal(false); setMergeMessage(''); }} title="Request to Join as Team">
+        {team && userOwnedTeam && (() => {
+          const combinedSize = userTeamMembersCount + totalSize;
+          const exceedsLimit = maxSize ? combinedSize > maxSize : false;
+
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+              <p style={{ margin: 0, fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
+                By sending this request, you are asking <strong>{ownerProfile?.full_name}</strong> to accept all your team members into their team.
+                If accepted, your team will be dissolved and all members will be transferred.
+              </p>
+
+              {/* Capacity breakdown */}
+              <div style={{ backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-md)', padding: 'var(--space-md)', display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
+                  <span>Your team members</span>
+                  <Badge variant="primary" size="sm">{userTeamMembersCount}</Badge>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
+                  <span>Their team members</span>
+                  <Badge variant="primary" size="sm">{totalSize}</Badge>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 'var(--space-sm)', borderTop: '1px solid var(--color-border-light)', fontWeight: 'var(--font-semibold)' }}>
+                  <span>Combined total</span>
+                  <Badge variant={exceedsLimit ? 'error' : 'success'} size="sm">
+                    {combinedSize} {maxSize ? `/ ${maxSize}` : ''}
+                  </Badge>
+                </div>
+              </div>
+
+              {exceedsLimit && (
+                <div style={{ display: 'flex', gap: 'var(--space-sm)', padding: 'var(--space-sm)', backgroundColor: 'var(--color-error-bg)', color: 'var(--color-error)', borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)' }}>
+                  <AlertTriangle size={16} style={{ marginTop: 2, flexShrink: 0 }} />
+                  <span>Combined team size exceeds the project limit. This request cannot be sent.</span>
+                </div>
+              )}
+
+              <Input
+                id="merge-message"
+                label="Message (optional)"
+                placeholder="e.g., We have complementary skills..."
+                value={mergeMessage}
+                onChange={(e) => setMergeMessage(e.target.value)}
+              />
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
+                <Button variant="ghost" onClick={() => setShowMergeModal(false)}>Cancel</Button>
+                <Button onClick={handleSendMergeRequest} loading={isSubmitting} disabled={exceedsLimit} icon={UsersRound}>
+                  Send Request
+                </Button>
+              </div>
+            </div>
+          );
+        })()}
+      </Modal>
+
     </div>
   );
 }

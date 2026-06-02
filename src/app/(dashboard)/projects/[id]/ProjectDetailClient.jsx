@@ -4,7 +4,8 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryState, useQueryUpdater } from '@/hooks/useQueryState';
 import {
-  Users, Building2, ArrowLeft, Plus, UserPlus, Check, X, Send, Lock, MessageSquare
+  Users, Building2, ArrowLeft, Plus, UserPlus, Check, X, Send, Lock, MessageSquare,
+  UsersRound, AlertTriangle
 } from 'lucide-react';
 import { Github, Linkedin, Whatsapp } from '@/components/ui/Icons/Icons';
 import { createClient } from '@/lib/supabase/client';
@@ -65,6 +66,12 @@ export default function ProjectDetailClient({ id }) {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteTarget, setInviteTarget] = useState(null);
   const [inviteMessage, setInviteMessage] = useState('');
+
+  // Merge request ("Request to Join as Team") state
+  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [mergeTarget, setMergeTarget] = useState(null);
+  const [mergeMessage, setMergeMessage] = useState('');
+  const [pendingOutgoingMerge, setPendingOutgoingMerge] = useState(null);
 
   // Visibility and Filtering logic
   const availableSkills = useMemo(() => {
@@ -246,6 +253,22 @@ export default function ProjectDetailClient({ id }) {
         .order('created_at', { ascending: false });
       if (seekersData) setProjectSeekers(seekersData);
 
+      // Fetch outgoing pending merge request (if user owns a team)
+      if (user && teamsData) {
+        const myTeam = teamsData.find(t => t.owner_id === user.id);
+        if (myTeam) {
+          const { data: outgoingMerge } = await supabase
+            .from('team_merge_requests')
+            .select('id, target_team_id, status')
+            .eq('source_team_id', myTeam.id)
+            .eq('status', 'pending')
+            .maybeSingle();
+          setPendingOutgoingMerge(outgoingMerge || null);
+        } else {
+          setPendingOutgoingMerge(null);
+        }
+      }
+
     } catch (err) {
       console.error('Fetch error:', err);
     } finally {
@@ -392,6 +415,100 @@ export default function ProjectDetailClient({ id }) {
       setInviteTarget(null);
     } catch (err) {
       showToast({ title: 'Cannot send invite', message: err.message, variant: 'error' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Send merge request ("Request to Join as Team")
+  const handleSendMergeRequest = async () => {
+    if (!user || !userOwnedTeam || !mergeTarget) return;
+
+    // Validate: can't merge with your own team
+    if (userOwnedTeam.id === mergeTarget.id) {
+      showToast({ title: 'Error', message: 'You cannot send a merge request to your own team.', variant: 'error' });
+      return;
+    }
+
+    // Validate: check if there's already a pending outgoing merge
+    if (pendingOutgoingMerge) {
+      showToast({ title: 'Request pending', message: 'You already have a pending merge request. Wait for a response or cancel it first.', variant: 'warning' });
+      return;
+    }
+
+    // Calculate capacities
+    const sourceCount = allMembers.filter(m => m.team_id === userOwnedTeam.id).length
+      + allManualMembers.filter(m => m.team_id === userOwnedTeam.id).length;
+    const targetCount = allMembers.filter(m => m.team_id === mergeTarget.id).length
+      + allManualMembers.filter(m => m.team_id === mergeTarget.id).length;
+    const combinedSize = sourceCount + targetCount;
+
+    if (combinedSize > project.max_team_size) {
+      showToast({
+        title: 'Team too large',
+        message: `Combined team size (${combinedSize}) exceeds the project limit (${project.max_team_size}).`,
+        variant: 'error'
+      });
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const { error } = await supabase.from('team_merge_requests').insert({
+        source_team_id: userOwnedTeam.id,
+        target_team_id: mergeTarget.id,
+        message: mergeMessage || null,
+      });
+
+      if (error) {
+        if (error.message?.includes('duplicate') || error.code === '23505') {
+          throw new Error('A pending merge request already exists for this team.');
+        }
+        throw error;
+      }
+
+      // Notify the target team owner
+      const targetOwnerId = mergeTarget.owner_id;
+      if (targetOwnerId) {
+        await supabase.from('notifications').insert({
+          user_id: targetOwnerId,
+          type: 'merge_received',
+          title: 'Team join request received',
+          body: `${profile?.full_name}'s team has requested to join your team for ${project.title}.`,
+          metadata: { source_team_id: userOwnedTeam.id, target_team_id: mergeTarget.id },
+        });
+
+        // Send email notification
+        try {
+          await fetch('/api/email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'merge_received',
+              recipientId: targetOwnerId,
+              recipientName: mergeTarget.profiles?.full_name,
+              actorName: profile?.full_name,
+              projectName: project.title,
+              message: mergeMessage || null,
+              sourceMemberCount: sourceCount,
+            }),
+          });
+        } catch (emailErr) {
+          console.error('Failed to send merge request email:', emailErr);
+        }
+      }
+
+      showToast({
+        title: 'Request sent',
+        message: `Your team's join request has been sent to ${mergeTarget.profiles?.full_name}.`,
+        variant: 'success'
+      });
+      setShowMergeModal(false);
+      setMergeMessage('');
+      setMergeTarget(null);
+      await fetchProject();
+    } catch (err) {
+      showToast({ title: 'Cannot send request', message: err.message, variant: 'error' });
     } finally {
       setActionLoading(false);
     }
@@ -599,11 +716,38 @@ export default function ProjectDetailClient({ id }) {
                           <span className={styles.avatarGroupMore}>+{tCount - 4}</span>
                         )}
                       </div>
-                      <Link href={`/teams/${t.id}`}>
-                        <Button size="sm" variant="outline">
-                          View Details
-                        </Button>
-                      </Link>
+                      <div className={styles.teamCardActions}>
+                        {/* Request to Join as Team button — visible to owners of other teams */}
+                        {userOwnedTeam && userOwnedTeam.id !== t.id && !isTFull && t.status !== 'closed' && (
+                          pendingOutgoingMerge?.target_team_id === t.id ? (
+                            <Badge variant="default" size="sm" className={styles.pendingMergeBadge}>
+                              Request Pending
+                            </Badge>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              icon={UsersRound}
+                              className={styles.mergeBtn}
+                              disabled={!!pendingOutgoingMerge}
+                              title={pendingOutgoingMerge ? 'You already have a pending request to another team' : 'Request to join this team with all your members'}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setMergeTarget(t);
+                                setShowMergeModal(true);
+                              }}
+                            >
+                              Join as Team
+                            </Button>
+                          )
+                        )}
+                        <Link href={`/teams/${t.id}`}>
+                          <Button size="sm" variant="outline">
+                            View Details
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
                   </Card>
                 );
@@ -847,7 +991,85 @@ export default function ProjectDetailClient({ id }) {
         </Modal>
       )}
 
+      {/* Request to Join as Team Modal */}
+      <Modal
+        isOpen={showMergeModal}
+        onClose={() => { setShowMergeModal(false); setMergeTarget(null); setMergeMessage(''); }}
+        title="Request to Join as Team"
+        footer={
+          <div className={styles.modalFooter}>
+            <Button variant="ghost" onClick={() => { setShowMergeModal(false); setMergeTarget(null); setMergeMessage(''); }}>Cancel</Button>
+            <Button onClick={handleSendMergeRequest} loading={actionLoading} icon={UsersRound}>Send Request</Button>
+          </div>
+        }
+      >
+        <div className={styles.modalContent}>
+          {mergeTarget && (() => {
+            const sourceCount = allMembers.filter(m => m.team_id === userOwnedTeam?.id).length
+              + allManualMembers.filter(m => m.team_id === userOwnedTeam?.id).length;
+            const targetCount = allMembers.filter(m => m.team_id === mergeTarget.id).length
+              + allManualMembers.filter(m => m.team_id === mergeTarget.id).length;
+            const combinedSize = sourceCount + targetCount;
+            const exceedsLimit = combinedSize > project.max_team_size;
 
+            return (
+              <>
+                {/* Target team info */}
+                <div className={styles.mergeModalTeamInfo}>
+                  <Avatar name={mergeTarget.profiles?.full_name} src={mergeTarget.profiles?.avatar_url} size="md" />
+                  <div>
+                    <h4 className={styles.mergeModalTeamName}>{mergeTarget.profiles?.full_name}&apos;s Team</h4>
+                    <p className={styles.mergeModalTeamDetail}>
+                      <Users size={12} /> {targetCount} / {project.max_team_size} members
+                    </p>
+                  </div>
+                </div>
+
+                {/* Capacity breakdown */}
+                <div className={styles.mergeCapacityCard}>
+                  <div className={styles.mergeCapacityRow}>
+                    <span>Your team members</span>
+                    <Badge variant="primary" size="sm">{sourceCount}</Badge>
+                  </div>
+                  <div className={styles.mergeCapacityRow}>
+                    <span>Their team members</span>
+                    <Badge variant="primary" size="sm">{targetCount}</Badge>
+                  </div>
+                  <div className={`${styles.mergeCapacityRow} ${styles.mergeCapacityTotal}`}>
+                    <span>Combined total</span>
+                    <Badge
+                      variant={exceedsLimit ? 'error' : 'success'}
+                      size="sm"
+                    >
+                      {combinedSize} / {project.max_team_size}
+                    </Badge>
+                  </div>
+                </div>
+
+                {exceedsLimit && (
+                  <div className={styles.mergeWarning}>
+                    <AlertTriangle size={16} />
+                    <span>Combined team size exceeds the project limit. This request cannot be sent.</span>
+                  </div>
+                )}
+
+                <p className={styles.modalText}>
+                  By sending this request, you are asking <strong>{mergeTarget.profiles?.full_name}</strong> to accept all your team members into their team.
+                  If accepted, your team will be dissolved and all members will be transferred.
+                </p>
+
+                <Input
+                  id="merge-message"
+                  label="Message (optional)"
+                  value={mergeMessage}
+                  onChange={(e) => setMergeMessage(e.target.value)}
+                  placeholder="e.g., Our teams have complementary skills and we'd love to work together!"
+                />
+              </>
+            );
+          })()}
+        </div>
+      </Modal>
 
     </div>
   );
