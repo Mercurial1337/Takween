@@ -8,7 +8,8 @@ import { useToast } from '@/contexts/ToastContext';
 import { createClient } from '@/lib/supabase/client';
 import {
   Users, Building2, ArrowLeft, Plus, Trash2, LogOut,
-  Check, X, Crown, ShieldAlert, Send, UsersRound, AlertTriangle
+  Check, X, Crown, ShieldAlert, Send, UsersRound, AlertTriangle,
+  Edit3, UserPlus, Link2, MessageSquare, Search
 } from 'lucide-react';
 import { Github, Linkedin, Whatsapp } from '@/components/ui/Icons/Icons';
 import Card from '@/components/ui/Card/Card';
@@ -18,6 +19,7 @@ import Avatar from '@/components/ui/Avatar/Avatar';
 import Skeleton from '@/components/ui/Skeleton/Skeleton';
 import Modal from '@/components/ui/Modal/Modal';
 import Input from '@/components/ui/Input/Input';
+import Select from '@/components/ui/Select/Select';
 import EmptyState from '@/components/ui/EmptyState/EmptyState';
 import Breadcrumbs from '@/components/ui/Breadcrumbs/Breadcrumbs';
 import styles from './page.module.css';
@@ -102,7 +104,7 @@ function MemberCard({ profile, userId, roleLabel, isLeader, removable, onRemove 
   );
 }
 
-function ManualMemberCard({ member }) {
+function ManualMemberCard({ member, isOwner, onEdit, onRemove, onLink }) {
   const hasLinks = member.whatsapp_number || member.linkedin_url || member.github_url;
 
   return (
@@ -133,6 +135,21 @@ function ManualMemberCard({ member }) {
           )}
         </div>
       </div>
+
+      {/* Owner actions for manual members */}
+      {isOwner && (
+        <div className={styles.memberActions}>
+          <Button variant="ghost" size="sm" icon={Link2} onClick={() => onLink(member)} title="Link to registered user">
+            Link
+          </Button>
+          <Button variant="ghost" size="sm" icon={Edit3} onClick={() => onEdit(member)}>
+            Edit
+          </Button>
+          <Button variant="danger-ghost" size="sm" icon={Trash2} onClick={() => onRemove(member.id, member.full_name)}>
+            Remove
+          </Button>
+        </div>
+      )}
     </Card>
   );
 }
@@ -165,6 +182,33 @@ export default function TeamDetailClient({ id }) {
   const [pendingOutgoingMerge, setPendingOutgoingMerge] = useState(null);
   const [showMergeModal, setShowMergeModal] = useState(false);
   const [mergeMessage, setMergeMessage] = useState('');
+
+  // Owner: Edit team modal
+  const [showEditTeamModal, setShowEditTeamModal] = useState(false);
+  const [editDescription, setEditDescription] = useState('');
+  const [editStatus, setEditStatus] = useState('recruiting');
+
+  // Owner: Add member modal
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [addMemberType, setAddMemberType] = useState('manual');
+  const [searchEmail, setSearchEmail] = useState('');
+  const [foundUser, setFoundUser] = useState(null);
+  const [manualName, setManualName] = useState('');
+  const [manualPhone, setManualPhone] = useState('');
+  const [manualNotes, setManualNotes] = useState('');
+
+  // Owner: Edit manual member modal
+  const [showEditManualModal, setShowEditManualModal] = useState(false);
+  const [editingManual, setEditingManual] = useState(null);
+  const [editManualName, setEditManualName] = useState('');
+  const [editManualPhone, setEditManualPhone] = useState('');
+  const [editManualNotes, setEditManualNotes] = useState('');
+
+  // Owner: Link manual member to registered user
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [linkingManual, setLinkingManual] = useState(null);
+  const [linkSearchEmail, setLinkSearchEmail] = useState('');
+  const [linkFoundUser, setLinkFoundUser] = useState(null);
 
   const fetchTeamData = useCallback(async () => {
     try {
@@ -452,6 +496,194 @@ export default function TeamDetailClient({ id }) {
     }
   };
 
+  // Owner: Update team details
+  const handleUpdateTeam = async () => {
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('teams')
+        .update({ description: editDescription.trim() || null, status: editStatus })
+        .eq('id', id);
+      if (error) throw error;
+      showToast({ title: 'Success', message: 'Team details updated.', type: 'success' });
+      setShowEditTeamModal(false);
+      fetchTeamData();
+    } catch (err) {
+      console.error(err);
+      showToast({ title: 'Error', message: 'Failed to update team.', type: 'error' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Owner: Search user by email
+  const handleSearchUser = async (emailValue, setFound) => {
+    if (!emailValue.trim()) return;
+    try {
+      const { data: contact } = await supabase
+        .from('contact_info')
+        .select('user_id, email')
+        .ilike('email', `%${emailValue.trim()}%`)
+        .limit(1)
+        .maybeSingle();
+      if (!contact) {
+        setFound(null);
+        showToast({ title: 'Not found', message: 'No user with that email.', type: 'error' });
+        return;
+      }
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .eq('id', contact.user_id)
+        .maybeSingle();
+      if (profile) {
+        setFound({ ...profile, email: contact.email });
+      } else {
+        setFound(null);
+        showToast({ title: 'Not found', message: 'No profile found for that user.', type: 'error' });
+      }
+    } catch (err) {
+      console.error(err);
+      showToast({ title: 'Error', message: err.message, type: 'error' });
+    }
+  };
+
+  // ── Owner: Add registered member ──
+  const handleAddRegistered = async () => {
+    if (!foundUser) return;
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.from('team_members').insert({
+        team_id: id, user_id: foundUser.id, role: 'member',
+      });
+      if (error) throw error;
+      showToast({ title: 'Success', message: 'Member added.', type: 'success' });
+      setShowAddMemberModal(false);
+      setFoundUser(null);
+      setSearchEmail('');
+      fetchTeamData();
+    } catch (err) {
+      console.error(err);
+      showToast({ title: 'Error', message: err.message || 'Failed to add member.', type: 'error' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ── Owner: Add manual member ──
+  const handleAddManual = async () => {
+    if (!manualName.trim()) return;
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.from('manual_members').insert({
+        team_id: id,
+        full_name: manualName.trim(),
+        whatsapp_number: manualPhone.trim() || null,
+        notes: manualNotes.trim() || null,
+        added_by: user?.id || null,
+      });
+      if (error) throw error;
+      showToast({ title: 'Success', message: 'Manual member added.', type: 'success' });
+      setShowAddMemberModal(false);
+      setManualName(''); setManualPhone(''); setManualNotes('');
+      fetchTeamData();
+    } catch (err) {
+      console.error(err);
+      showToast({ title: 'Error', message: 'Failed to add manual member.', type: 'error' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ── Owner: Save manual member edits ──
+  const handleSaveManualEdit = async () => {
+    if (!editingManual || !editManualName.trim()) return;
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.from('manual_members').update({
+        full_name: editManualName.trim(),
+        whatsapp_number: editManualPhone.trim() || null,
+        notes: editManualNotes.trim() || null,
+      }).eq('id', editingManual.id);
+      if (error) throw error;
+      showToast({ title: 'Success', message: 'Manual member updated.', type: 'success' });
+      setShowEditManualModal(false);
+      fetchTeamData();
+    } catch (err) {
+      console.error(err);
+      showToast({ title: 'Error', message: 'Failed to update manual member.', type: 'error' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ── Owner: Remove manual member ──
+  const handleRemoveManualMember = async (memberId, memberName) => {
+    if (!confirm(`Remove ${memberName} from the team?`)) return;
+    try {
+      const { error } = await supabase.from('manual_members').delete().eq('id', memberId);
+      if (error) throw error;
+      showToast({ title: 'Success', message: 'Manual member removed.', type: 'success' });
+      fetchTeamData();
+    } catch (err) {
+      console.error(err);
+      showToast({ title: 'Error', message: 'Failed to remove manual member.', type: 'error' });
+    }
+  };
+
+  // ── Owner: Link manual member to a registered user ──
+  const handleLinkMember = async () => {
+    if (!linkingManual || !linkFoundUser) return;
+    setIsSubmitting(true);
+    try {
+      // Add as registered member
+      const { error: addErr } = await supabase.from('team_members').insert({
+        team_id: id, user_id: linkFoundUser.id, role: 'member',
+      });
+      if (addErr) throw addErr;
+      // Remove the manual entry
+      const { error: delErr } = await supabase.from('manual_members').delete().eq('id', linkingManual.id);
+      if (delErr) throw delErr;
+      showToast({ title: 'Success', message: `${linkingManual.full_name} linked to ${linkFoundUser.full_name}.`, type: 'success' });
+      setShowLinkModal(false);
+      setLinkingManual(null); setLinkFoundUser(null); setLinkSearchEmail('');
+      fetchTeamData();
+    } catch (err) {
+      console.error(err);
+      showToast({ title: 'Error', message: err.message || 'Failed to link member.', type: 'error' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ── Modal openers ──
+  const openEditTeamModal = () => {
+    setEditDescription(team?.description || '');
+    setEditStatus(team?.status || 'recruiting');
+    setShowEditTeamModal(true);
+  };
+
+  const openEditManualModal = (m) => {
+    setEditingManual(m);
+    setEditManualName(m.full_name);
+    setEditManualPhone(m.whatsapp_number || '');
+    setEditManualNotes(m.notes || '');
+    setShowEditManualModal(true);
+  };
+
+  const openLinkModal = (m) => {
+    setLinkingManual(m);
+    setLinkSearchEmail('');
+    setLinkFoundUser(null);
+    setShowLinkModal(true);
+  };
+
+  const openAddMemberModal = () => {
+    setAddMemberType('manual');
+    setManualName(''); setManualPhone(''); setManualNotes('');
+    setSearchEmail(''); setFoundUser(null);
+    setShowAddMemberModal(true);
+  };
   if (loading) {
     return (
       <div className={styles.page}>
@@ -533,10 +765,15 @@ export default function TeamDetailClient({ id }) {
             </Button>
           )}
           {isOwner && (
-            <Button variant="outline" icon={Trash2} onClick={() => setShowDeleteModal(true)}
-              style={{ color: 'var(--color-error)', borderColor: 'var(--color-error)' }}>
-              Delete Team
-            </Button>
+            <>
+              <Button variant="outline" icon={Edit3} onClick={openEditTeamModal}>
+                Edit Team
+              </Button>
+              <Button variant="outline" icon={Trash2} onClick={() => setShowDeleteModal(true)}
+                style={{ color: 'var(--color-error)', borderColor: 'var(--color-error)' }}>
+                Delete Team
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -547,6 +784,11 @@ export default function TeamDetailClient({ id }) {
           <h2 className={styles.sectionTitle}>
             Team Members ({totalSize})
           </h2>
+          {isOwner && !isFull && (
+            <Button size="sm" icon={UserPlus} onClick={openAddMemberModal}>
+              Add Member
+            </Button>
+          )}
         </div>
 
         <div className={styles.membersGrid}>
@@ -575,7 +817,14 @@ export default function TeamDetailClient({ id }) {
 
           {/* Manual members */}
           {manualMembers.map(m => (
-            <ManualMemberCard key={m.id} member={m} />
+            <ManualMemberCard
+              key={m.id}
+              member={m}
+              isOwner={isOwner}
+              onEdit={openEditManualModal}
+              onRemove={handleRemoveManualMember}
+              onLink={openLinkModal}
+            />
           ))}
         </div>
       </div>
@@ -708,6 +957,141 @@ export default function TeamDetailClient({ id }) {
             </div>
           );
         })()}
+      </Modal>
+
+      {/* Owner: Edit Team Modal */}
+      <Modal isOpen={showEditTeamModal} onClose={() => setShowEditTeamModal(false)} title="Edit Team Details">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+          <Select
+            id="edit-team-status"
+            label="Status"
+            options={[
+              { value: 'recruiting', label: 'Recruiting' },
+              { value: 'closed', label: 'Closed' },
+            ]}
+            value={editStatus}
+            onChange={(e) => setEditStatus(e.target.value)}
+          />
+          <div>
+            <label htmlFor="edit-team-desc" style={{ display: 'block', fontSize: 'var(--text-sm)', fontWeight: 'var(--font-medium)', marginBottom: 'var(--space-xs)', color: 'var(--color-text)' }}>
+              Team Message / Description
+            </label>
+            <textarea
+              id="edit-team-desc"
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              placeholder="Describe your team, what you're looking for..."
+              rows={4}
+              style={{
+                width: '100%', padding: 'var(--space-sm) var(--space-md)',
+                borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)',
+                backgroundColor: 'var(--color-bg)', color: 'var(--color-text)',
+                fontSize: 'var(--text-sm)', fontFamily: 'inherit', resize: 'vertical',
+              }}
+            />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
+            <Button variant="ghost" onClick={() => setShowEditTeamModal(false)}>Cancel</Button>
+            <Button onClick={handleUpdateTeam} loading={isSubmitting} icon={Check}>Save Changes</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Owner: Add Member Modal ── */}
+      <Modal isOpen={showAddMemberModal} onClose={() => setShowAddMemberModal(false)} title="Add Team Member">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+          <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
+            <Button
+              size="sm"
+              variant={addMemberType === 'manual' ? 'primary' : 'ghost'}
+              onClick={() => setAddMemberType('manual')}
+            >
+              Manual Member
+            </Button>
+            <Button
+              size="sm"
+              variant={addMemberType === 'registered' ? 'primary' : 'ghost'}
+              onClick={() => setAddMemberType('registered')}
+            >
+              Registered User
+            </Button>
+          </div>
+
+          {addMemberType === 'manual' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
+              <Input id="manual-name" label="Full Name" value={manualName} onChange={(e) => setManualName(e.target.value)} required placeholder="Student full name" />
+              <Input id="manual-phone" label="WhatsApp Number" value={manualPhone} onChange={(e) => setManualPhone(e.target.value)} placeholder="+966XXXXXXXXX" />
+              <Input id="manual-notes" label="Notes" value={manualNotes} onChange={(e) => setManualNotes(e.target.value)} placeholder="e.g., CS major, handles backend" />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
+                <Button variant="ghost" onClick={() => setShowAddMemberModal(false)}>Cancel</Button>
+                <Button onClick={handleAddManual} loading={isSubmitting} disabled={!manualName.trim()}>Add Manual Member</Button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
+              <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'flex-end' }}>
+                <div style={{ flex: 1 }}>
+                  <Input id="search-email" label="Search by email" value={searchEmail} onChange={(e) => setSearchEmail(e.target.value)} placeholder="user@email.com" />
+                </div>
+                <Button icon={Search} onClick={() => handleSearchUser(searchEmail, setFoundUser)} style={{ flexShrink: 0 }}>Search</Button>
+              </div>
+              {foundUser && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', padding: 'var(--space-sm)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-success)', backgroundColor: 'var(--color-success-bg)' }}>
+                  <Avatar src={foundUser.avatar_url} name={foundUser.full_name} size="sm" />
+                  <div>
+                    <p style={{ fontWeight: 'var(--font-semibold)', fontSize: 'var(--text-sm)' }}>{foundUser.full_name}</p>
+                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>{foundUser.email}</p>
+                  </div>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
+                <Button variant="ghost" onClick={() => setShowAddMemberModal(false)}>Cancel</Button>
+                <Button onClick={handleAddRegistered} loading={isSubmitting} disabled={!foundUser}>Add Member</Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* ── Owner: Edit Manual Member Modal ── */}
+      <Modal isOpen={showEditManualModal} onClose={() => setShowEditManualModal(false)} title="Edit Manual Member">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+          <Input id="edit-manual-name" label="Full Name" value={editManualName} onChange={(e) => setEditManualName(e.target.value)} required />
+          <Input id="edit-manual-phone" label="WhatsApp Number" value={editManualPhone} onChange={(e) => setEditManualPhone(e.target.value)} />
+          <Input id="edit-manual-notes" label="Notes" value={editManualNotes} onChange={(e) => setEditManualNotes(e.target.value)} />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
+            <Button variant="ghost" onClick={() => setShowEditManualModal(false)}>Cancel</Button>
+            <Button onClick={handleSaveManualEdit} loading={isSubmitting} disabled={!editManualName.trim()} icon={Check}>Save</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Owner: Link Manual Member to Registered User Modal ── */}
+      <Modal isOpen={showLinkModal} onClose={() => setShowLinkModal(false)} title="Link to Registered User">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
+          <p style={{ margin: 0, fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
+            Search for a registered user to replace <strong>{linkingManual?.full_name}</strong>. The manual entry will be removed and the user will be added as a registered member.
+          </p>
+          <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'flex-end' }}>
+            <div style={{ flex: 1 }}>
+              <Input id="link-search-email" label="Search by email" value={linkSearchEmail} onChange={(e) => setLinkSearchEmail(e.target.value)} placeholder="user@email.com" />
+            </div>
+            <Button icon={Search} onClick={() => handleSearchUser(linkSearchEmail, setLinkFoundUser)} style={{ flexShrink: 0 }}>Search</Button>
+          </div>
+          {linkFoundUser && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', padding: 'var(--space-sm)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-success)', backgroundColor: 'var(--color-success-bg)' }}>
+              <Avatar src={linkFoundUser.avatar_url} name={linkFoundUser.full_name} size="sm" />
+              <div>
+                <p style={{ fontWeight: 'var(--font-semibold)', fontSize: 'var(--text-sm)' }}>{linkFoundUser.full_name}</p>
+                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>{linkFoundUser.email}</p>
+              </div>
+            </div>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-sm)', marginTop: 'var(--space-sm)' }}>
+            <Button variant="ghost" onClick={() => setShowLinkModal(false)}>Cancel</Button>
+            <Button onClick={handleLinkMember} loading={isSubmitting} disabled={!linkFoundUser} icon={Link2}>Link Member</Button>
+          </div>
+        </div>
       </Modal>
 
     </div>
